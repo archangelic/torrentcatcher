@@ -1,3 +1,5 @@
+#!/usr/bin/python
+#
 # 	Showcatcher - Takes urls from text files and downloads them using transmission
 # 	Copyright (C) 2014  Michael Hancock
 #
@@ -14,7 +16,6 @@
 # 	You should have received a copy of the GNU General Public License
 # 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#!/usr/bin/python
 import requests
 import os
 import logging
@@ -66,7 +67,7 @@ def pushbullet(name):
 	payload = {'type': 'note', 'title':'Downloading new file', 'body':body}
 	note = requests.post('https://api.pushbullet.com/api/pushes', data = payload, auth = (api, ""))
 	if str(note) == "<Response [200]>":
- 		logging.info("Push message for %s sent successfully") % (name)
+ 		logging.info("Push message for %s sent successfully" % (name))
  	else:
  		logging.error("An error occured while sending push note")
 		logging.error(note)
