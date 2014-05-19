@@ -18,17 +18,24 @@
 
 import requests
 import os
+import subprocess
 import logging
+from feeder import main as feeder
+from posterget import main as posterget
+from configobj import ConfigObj
+config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
 
 #This is where the files from IFTTT should be put
-cache = 'cache'
+cache = config['cache']
+xmlcache = config['xmlcache']
 #And this is where we will put them once they are done
-archive = 'archive'
+archive = config['archive']
+logfile = config['logfile'] 
 #api key for Pushbullet
-api = '<your api key here>'
+api = config['pushkey']
 
 #Creates a logger to keep track of things going on in logfile.log
-logging.basicConfig(format='[%(levelname)s] [%(asctime)s] %(message)s', filename='logfile.log', level = logging.INFO, datefmt="%m-%d-%y %H:%M:%S")
+logging.basicConfig(format='[%(levelname)s] [%(asctime)s] %(message)s', filename=logfile, level = logging.INFO, datefmt="%m-%d-%y %H:%M:%S")
 #Allows logging to the terminal when running manually
 console = logging.StreamHandler()
 formatter = logging.Formatter(fmt = "[%(levelname)s] %(message)s")
@@ -46,20 +53,38 @@ if os.path.isdir(archive) == False:
 	logging.error("Directory '%s' does not exist" % (archive))
 	os.mkdir(archive)
 	logging.info("Created directory '%s'" % (archive))
+	
+if os.path.isdir(xmlcache) == False:
+	logging.error("Directory '%s' does not exist" % (xmlcache))
+	os.mkdir(xmlcache)
+	logging.info("Created directory '%s'" % (xmlcache))
 
+try:
+	feedmsg,arcount,cacount = feeder()
+	if arcount != 0:
+		logging.info('%s shows already in archive' % arcount)
+	if cacount != 0:
+		logging.info('%s shows ready to be downloaded' % cacount)
+	for i in feedmsg:
+		logging.info(feedmsg[i])
+except:
+	logging.error('Could not access rss feeds')
+	
 filelist = os.listdir(cache)
 	
 #Create a command to run
 #This creates a transmission-cli session to run in a screen with the id transmission
 #Will start detached
-def transmission(magnet, number):
-	if number == 1: number = ''
-	number = str(number)
+def transmission(magnet):
 	# Executes the command in the system
 	# Requires: screen and transmission-cli
-	transmissioncommand = "screen -d -m -S transmission%s transmission-cli %s" % (number, magnet)
- 	os.system(transmissioncommand)
-	logging.info("Download started on screen transmission%s" % (number))
+	transmissioncommand = "transmission-remote -a %s" % (magnet)
+ 	success = os.system(transmissioncommand)
+	if success == 0:
+		logging.info("Download started")
+	else:
+		logging.info("Transmission remote error")
+	return success
 
 #This will prepare a note to push to devices over Pushbullet
 def pushbullet(name):
@@ -72,18 +97,18 @@ def pushbullet(name):
  		logging.error("An error occured while sending push note")
 		logging.error(note)
 
-x = 1
 if filelist != []:
-	for i in filelist:
-		location = cache + "/" + i
+	for name in filelist:
+		location = cache + "/" + name
+		postermsg = posterget(location)
+		logging.info(postermsg)
 		with open (location, "r") as myfile:
 			data = myfile.read().replace('\n', '')
-		name = i[:len(i)-4]
-		transmission(data, x)
-		pushbullet(name)
-		os.rename(location, archive + "/" + i)
-		logging.info("Archived %s" % (i))
-		x += 1
+		link,show,se,ep = data.split(' : ')
+		if transmission(link) == 0:
+			pushbullet(name)
+			os.rename(location, archive + "/" + name)
+			logging.info("Archived %s" % (name))
 else:
 	logging.info("No files to download")
   
