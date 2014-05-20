@@ -83,7 +83,7 @@ def transmission(magnet):
 	if success == 0:
 		logging.info("Download started")
 	else:
-		logging.info("Transmission remote error")
+		logging.error("Transmission remote error")
 	return success
 
 #This will prepare a note to push to devices over Pushbullet
