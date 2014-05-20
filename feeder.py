@@ -6,8 +6,8 @@ from configobj import ConfigObj
 config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
 
 appPath = config['appPath']
-cache = appPath + 'cache'
-archive = appPath + 'archive'
+cache = appPath + 'cache/'
+archive = appPath + 'archive/'
 feedfile = appPath + 'feeds'
 
 arclist = os.listdir(archive)

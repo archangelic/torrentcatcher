@@ -6,8 +6,8 @@ from configobj import ConfigObj
 config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
 
 appPath = config['appPath']
-archive = appPath + 'archive'
-xmlcache = appPath + 'xmlcache'
+archive = appPath + 'archive/'
+xmlcache = appPath + 'xmlcache/'
 downdir = config['torrentfolder']
 
 arclist = os.listdir(archive)

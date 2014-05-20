@@ -7,8 +7,8 @@ from configobj import ConfigObj
 config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
 
 appPath = config['appPath']
-cache = appPath + 'cache'
-xmlcache = appPath + 'xmlcache'
+cache = appPath + 'cache/'
+xmlcache = appPath + 'xmlcache/'
 torrentfolder = config['torrentfolder']
 apikey = config['tvdbkey']
 tvdb = 'http://thetvdb.com/'
