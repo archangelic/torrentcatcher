@@ -11,4 +11,4 @@ showcatcher
 * transmission-remote
 
 ###Description
-Uses rss feeds from ezrss.it to gather links to send to transmission. Tags MP4 files with information gathered from thedvdb.com
+Uses rss feeds from ezrss.it to gather links to send to transmission. Tags MP4 files with information gathered from http://thetvdb.com
