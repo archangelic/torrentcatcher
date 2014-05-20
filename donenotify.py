@@ -2,9 +2,11 @@
 import requests
 from os import environ
 from tagger import main as tagger
+from configobj import ConfigObj
+config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
 
 name = environ['TR_TORRENT_NAME']
-api = 'v1MA1cGJB8hungKO8FQZ7eV6lnv5EPWVEoujvqYP8DzAy'
+api = config['pushkey']
 
 def pushbullet(payload):
 	requests.pos('https://api.pushbullet.com/api/pushes', data = payload, auth = (api, ""))
