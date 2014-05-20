@@ -22,7 +22,7 @@ entries = []
 with open(feedfile, 'r') as myfile:
 	feeddata = myfile.read().split('\n')
 for each in feeddata:
-	if each != '':
+	if (each != '')&(each.startswith('#') == False):
 		feeds.append(each)
 for each in feeds:
 	data = parse(each)
