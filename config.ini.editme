@@ -1,0 +1,5 @@
+#Enter full path for appPath and torrentfolder with a trailing /
+appPath = '/path/to/showcatcher/'
+pushkey = '<your pushbullet key here>'
+torrentfolder = '/path/to/transmission/downloads/'
+tvdbkey = '<your thetvdb api key here>'

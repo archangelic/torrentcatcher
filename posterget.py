@@ -6,8 +6,9 @@ import time
 from configobj import ConfigObj
 config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
 
-cache = config['archive']
-xmlcache = config['xmlcache']
+appPath = config['appPath']
+cache = appPath + 'cache'
+xmlcache = appPath + 'xmlcache'
 torrentfolder = config['torrentfolder']
 apikey = config['tvdbkey']
 tvdb = 'http://thetvdb.com/'

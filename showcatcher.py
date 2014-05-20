@@ -26,11 +26,12 @@ from configobj import ConfigObj
 config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
 
 #This is where the files from IFTTT should be put
-cache = config['cache']
-xmlcache = config['xmlcache']
+appPath = config['appPath']
+cache = appPath + 'cache'
+xmlcache = appPath + 'xmlcache'
 #And this is where we will put them once they are done
-archive = config['archive']
-logfile = config['logfile'] 
+archive = appPath + 'archive'
+logfile = appPath + 'logfile.log' 
 #api key for Pushbullet
 api = config['pushkey']
 
