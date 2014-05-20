@@ -52,3 +52,10 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# Showcatcher stuff
+archive/
+cache/
+config.ini
+logfile.log
+feeds
+xmlcache/
