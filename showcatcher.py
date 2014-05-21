@@ -26,7 +26,7 @@ from configobj import ConfigObj
 appPath = os.path.dirname(__file__) + '/'
 config = ConfigObj(appPath + 'config.ini'))
 
-#This is where the files from IFTTT should be put
+#This is where the files from feeder and posterget should be put
 cache = appPath + 'cache/'
 xmlcache = appPath + 'xmlcache/'
 #And this is where we will put them once they are done
