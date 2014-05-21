@@ -23,7 +23,11 @@ import logging
 from feeder import main as feeder
 from posterget import main as posterget
 from configobj import ConfigObj
-appPath = os.path.dirname(__file__) + '/'
+appPath = os.path.dirname(__file__)
+if appPath == '':
+	appPath = "./"
+else:
+	appPath = appPath + '/'
 config = ConfigObj(appPath + 'config.ini')
 
 #This is where the files from feeder and posterget should be put

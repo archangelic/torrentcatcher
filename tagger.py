@@ -1,7 +1,11 @@
 from bs4 import BeautifulSoup as bsoup
 import os
 from configobj import ConfigObj
-appPath = os.path.dirname(__file__) + '/'
+appPath = os.path.dirname(__file__)
+if appPath == '':
+	appPath = "./"
+else:
+	appPath = appPath + '/'
 config = ConfigObj(appPath + 'config.ini')
 
 archive = appPath + 'archive/'
