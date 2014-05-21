@@ -1,5 +1,3 @@
-from mutagen.mp4 import MP4 as mp4
-from mutagen.mp4 import MP4Cover as mp4cover
 from bs4 import BeautifulSoup as bsoup
 import os
 from configobj import ConfigObj
