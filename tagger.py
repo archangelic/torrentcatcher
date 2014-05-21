@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup as bsoup
 import os
 from configobj import ConfigObj
-appPath = os.path.dirname(__file__)
+appPath = os.path.dirname(os.path.abspath(__file__))
 if appPath == '':
 	appPath = "./"
 else:

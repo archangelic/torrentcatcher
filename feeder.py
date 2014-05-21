@@ -3,7 +3,7 @@ import os
 from urllib2 import urlopen
 from urllib import urlretrieve
 from configobj import ConfigObj
-appPath = os.path.dirname(__file__)
+appPath = os.path.dirname(os.path.abspath(__file__))
 if appPath == '':
 	appPath = "./"
 else:

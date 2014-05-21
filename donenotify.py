@@ -3,7 +3,7 @@ import requests
 from os import environ
 from tagger import main as tagger
 from configobj import ConfigObj
-appPath = os.path.dirname(__file__)
+appPath = os.path.dirname(os.path.abspath(__file__))
 if appPath == '':
 	appPath = "./"
 else:
