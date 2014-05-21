@@ -3,7 +3,11 @@ import requests
 from os import environ
 from tagger import main as tagger
 from configobj import ConfigObj
-appPath = os.path.dirname(__file__) + '/'
+appPath = os.path.dirname(__file__)
+if appPath == '':
+	appPath = "./"
+else:
+	appPath = appPath + '/'
 config = ConfigObj(appPath + 'config.ini')
 
 name = environ['TR_TORRENT_NAME']
@@ -17,3 +21,4 @@ if name.endswith(".mp4"):
 body = "File " + name + " was successfully downloaded."
 payload = {'type': 'note', 'title':'Download completed', 'body':body}
 pushbullet(payload)
+
