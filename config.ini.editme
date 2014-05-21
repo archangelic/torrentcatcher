@@ -1,5 +1,4 @@
-#Enter full path for appPath and torrentfolder with a trailing /
-appPath = '/path/to/showcatcher/'
+#Enter full path for torrentfolder with a trailing /
 pushkey = '<your pushbullet key here>'
 torrentfolder = '/path/to/transmission/downloads/'
 tvdbkey = '<your thetvdb api key here>'

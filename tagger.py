@@ -3,9 +3,9 @@ from mutagen.mp4 import MP4Cover as mp4cover
 from bs4 import BeautifulSoup as bsoup
 import os
 from configobj import ConfigObj
-config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
+appPath = os.path.dirname(__file__) + '/'
+config = ConfigObj(appPath + 'config.ini')
 
-appPath = config['appPath']
 archive = appPath + 'archive/'
 xmlcache = appPath + 'xmlcache/'
 downdir = config['torrentfolder']

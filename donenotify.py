@@ -3,7 +3,8 @@ import requests
 from os import environ
 from tagger import main as tagger
 from configobj import ConfigObj
-config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
+appPath = os.path.dirname(__file__) + '/'
+config = ConfigObj(appPath + 'config.ini')
 
 name = environ['TR_TORRENT_NAME']
 api = config['pushkey']

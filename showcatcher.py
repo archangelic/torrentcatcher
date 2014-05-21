@@ -23,10 +23,10 @@ import logging
 from feeder import main as feeder
 from posterget import main as posterget
 from configobj import ConfigObj
-config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
+appPath = os.path.dirname(__file__) + '/'
+config = ConfigObj(appPath + 'config.ini'))
 
 #This is where the files from IFTTT should be put
-appPath = config['appPath']
 cache = appPath + 'cache/'
 xmlcache = appPath + 'xmlcache/'
 #And this is where we will put them once they are done

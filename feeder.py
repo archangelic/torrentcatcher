@@ -3,9 +3,9 @@ import os
 from urllib2 import urlopen
 from urllib import urlretrieve
 from configobj import ConfigObj
-config = ConfigObj('/home/michael/Dropbox/Projects/showcatcher/config.ini')
+appPath = os.path.dirname(__file__) + '/'
+config = ConfigObj(appPath + 'config.ini')
 
-appPath = config['appPath']
 cache = appPath + 'cache/'
 archive = appPath + 'archive/'
 feedfile = appPath + 'feeds'
