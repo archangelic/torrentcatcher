@@ -36,7 +36,7 @@ else:
 	print "Configuration file not found."
 	print "Enter absolute or relative path to your configuration file."
 	configlocation = raw_input("--> ")
-	while path.isfile(configlocation) == False:
+	while (path.isfile(configlocation) == False) | (configlocation.endswith('.ini') == False):
 		print "Invalid location. Try again. "
 		configlocation = raw_input("--> ")
 	config = ConfigObj(configlocation)
