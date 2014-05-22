@@ -18,17 +18,29 @@
 
 import requests
 import os
+import os.path as path
 import subprocess
 import logging
 from feeder import main as feeder
 from posterget import main as posterget
 from configobj import ConfigObj
-appPath = os.path.dirname(os.path.abspath(__file__))
+appPath = path.dirname(os.path.abspath(__file__))
 if appPath == '':
 	appPath = "./"
 else:
 	appPath = appPath + '/'
-config = ConfigObj(appPath + 'config.ini')
+	
+if path.isfile(appPath + 'config.ini') == True:
+	config = ConfigObj(appPath + 'config.ini')
+else:
+	print "Configuration file not found."
+	print "Enter absolute or relative path to your configuration file."
+	configlocation = raw_input("--> ")
+	while path.isfile(configlocation) == False:
+		print "Invalid location. Try again. "
+		configlocation = raw_input("--> ")
+	config = ConfigObj(configlocation)
+	appPath = path.dirname(path.abspath(configlocation)) + '/'
 
 #This is where the files from feeder and posterget should be put
 cache = appPath + 'cache/'
@@ -46,20 +58,20 @@ console = logging.StreamHandler()
 formatter = logging.Formatter(fmt = "[%(levelname)s] %(message)s")
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
-	
+
 logging.info("Starting")
 
-if os.path.isdir(cache) == False:
+if path.isdir(cache) == False:
 	logging.error("Directory '%s' does not exist" % (cache))
 	os.mkdir(cache)
 	logging.info("Created directory '%s'" % (cache))
 	
-if os.path.isdir(archive) == False:
+if path.isdir(archive) == False:
 	logging.error("Directory '%s' does not exist" % (archive))
 	os.mkdir(archive)
 	logging.info("Created directory '%s'" % (archive))
 	
-if os.path.isdir(xmlcache) == False:
+if path.isdir(xmlcache) == False:
 	logging.error("Directory '%s' does not exist" % (xmlcache))
 	os.mkdir(xmlcache)
 	logging.info("Created directory '%s'" % (xmlcache))
