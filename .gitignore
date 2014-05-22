@@ -56,6 +56,6 @@ docs/_build/
 archive/
 cache/
 config.ini
-logfile.log
 feeds
 xmlcache/
+config.ini.editme
