@@ -21,8 +21,6 @@ import os
 import os.path as path
 import subprocess
 import logging
-from feeder import main as feeder
-from posterget import main as posterget
 from configobj import ConfigObj
 appPath = path.dirname(os.path.abspath(__file__))
 if appPath == '':
@@ -75,6 +73,9 @@ if path.isdir(xmlcache) == False:
 	logging.error("Directory '%s' does not exist" % (xmlcache))
 	os.mkdir(xmlcache)
 	logging.info("Created directory '%s'" % (xmlcache))
+	
+from feeder import main as feeder
+from posterget import main as posterget
 
 try:
 	feedmsg,arcount,cacount = feeder()
