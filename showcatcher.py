@@ -18,8 +18,8 @@ dataPath = path.join(appPath, '.showcatcher')
 keys = {
 	'archive' : path.join(dataPath, 'archive'),
 	'cache' : path.join(dataPath, 'cache'),
-	'feeds' : path.join(dataPath, 'feeds'),
-	'log' : path.join(dataPath, 'showcatcher.log')}
+	'log' : path.join(dataPath, 'showcatcher.log'),
+	'config' : path.join(dataPath, 'config')}
 
 if path.isdir(dataPath) == False:
 	os.mkdir(dataPath)
@@ -30,14 +30,11 @@ if path.isdir(keys['cache']) == False:
 if path.isdir(keys['archive']) == False:
 	os.mkdir(keys['archive'])
 	
-if path.isfile(keys['feeds']) == False:
-	open(keys['feeds'], 'a').close()
-	
 class Feeder():
 	def __init__(self, keys):
+		self.configfile = keys['config']
 		self.archive = keys['archive']
 		self.cache = keys['cache']
-		self.feedfile = keys['feeds']
 		self.log = keys['log']
 		self.arcdict = {}
 		self.cachedict = {}
@@ -50,19 +47,16 @@ class Feeder():
 			self.cachedict[self.i] = '1'
 				
 	def write(self):
-		self.feeds = []
 		self.entries = []
 		self.count = {'arc' : 0, 'cache' : 0, 'write' : 0}
-		with open(self.feedfile, 'r') as self.myfile:
-			self.feeddata = self.myfile.read().split('\n')
-		for self.i in self.feeddata:
-			if (self.i != '')&(self.i.startswith('#') == False):
-				self.feeds.append(self.i)
-		if self.feeds == []:
+		self.config = configobj(self.configfile)
+		self.feeds = self.config['feeds']
+		if self.feeds == {}:
 			self.logger("[ERROR] No feeds found in feeds file! Use '-f' or '--add-feed' options to add episode feeds")
 			return 0
 		for self.i in self.feeds:
-			self.feeddat = parse(self.i)
+			self.logger('[QUEUE] Reading entries for feed "' + self.i + '"')
+			self.feeddat = parse(self.feeds[self.i])
 			for self.i in self.feeddat.entries:
 				self.entries.append(self.i)
 		for self.i in self.entries:
@@ -111,13 +105,18 @@ class Feeder():
 myFeeder = Feeder(keys)
 
 def configreader():
-	configfile = path.join(dataPath, 'config')
-	cfg = """hostname = string(default='localhost')
+	configfile = keys['config']
+	cfg = """[transmission]
+		hostname = string(default='localhost')
 		port = string(default='9091')
 		require_auth = boolean(default=False)
 		username = string(default='')
 		password = string(default='')
-		download_directory = string(default='')"""
+		download_directory = string(default='')
+		
+		[feeds]
+		# Example:
+		# feedname = http://url.to/feed.rss"""
 	spec = cfg.split("\n")
 	config = configobj(configfile, configspec=spec)
 	validator = validate.Validator()
@@ -146,10 +145,10 @@ def transmission(title, host, port, auth, authopt, downdir):
 		myFeeder.logger('[ERROR] ' + error.strip('\n'))
 		return 1
 
-def addfeed(url):
-	with open(keys['feeds'], 'a') as myfile:
-		myfile.write(url + '\n')
-	myFeeder.logger('[FEEDS] Feed ' + url + ' added successfully.')
+def addfeed(name, url):
+	config = configreader()
+	config['feeds'][name] = url
+	config.write()
 
 def printhelp():
 	options = [
@@ -159,7 +158,7 @@ def printhelp():
 		'                                           to the archive',
 		' -d   --download                           Sends all queued episodes to Trans-',
 		'                                           mission',
-		' -f   --add-feed               <url>       Appends the given URL to the list of',
+		' -f   --add-feed        <name> <url>       Appends the given URL to the list of',
 		'                                           feeds',
 		' -h   --help                               Displays this help page',
 		' -l   --list                               Lists all queued episodes',
@@ -193,12 +192,13 @@ if __name__ == '__main__':
 	cachelist = os.listdir(cache)
 	cachelist.sort()
 	config = configreader()
-	host = config['hostname']
-	port = config['port']
-	auth = config['require_auth']
-	authopt = config['username'] + ':' + config['password']
-	downdir = config['download_directory']
-	try:
+	trconfig = config['transmission']
+	host = trconfig['hostname']
+	port = trconfig['port']
+	auth = trconfig['require_auth']
+	authopt = trconfig['username'] + ':' + trconfig['password']
+	downdir = trconfig['download_directory']
+	if len(args) >= 2:
 		if (args[1] == '-a') | (args[1] == '--archive'):
 			myFeeder.logger('[ARCHIVE ONLY] Moving all episodes in queue to the archive')
 			if cachelist == []:
@@ -221,10 +221,10 @@ if __name__ == '__main__':
 				else:
 					myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
 		elif (args[1] == '-f') | (args[1] == '--add-feed'):
-			try:
-				addfeed(args[2])
-			except:
-				print "Please enter the feed url with the '" + args[1] + "' option."
+			if len(args) == 4:
+				addfeed(args[2], args[3])
+			else:
+				print "The option '" + args[1] + "' takes exactly 2 arguments: <name> <url>. Please enter both in that order."
 		elif (args[1] == '-h') | (args[1] == '--help'):
 			printhelp()				
 		elif (args[1] == '-l') | (args[1] == '--list'):
@@ -237,7 +237,7 @@ if __name__ == '__main__':
 		else:
 			print "Invalid option '" + args[1] + "'"
 			print "Try using '-h' or '--help' for a list of valid options"
-	except:
+	else:
 		myFeeder.logger('[SHOWCATCHER] Starting Showcatcher')
 		myFeeder.write()
 		cachelist = os.listdir(cache)
