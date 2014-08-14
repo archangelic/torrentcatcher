@@ -55,7 +55,7 @@ class Feeder():
 			self.logger("[ERROR] No feeds found in feeds file! Use '-f' or '--add-feed' options to add episode feeds")
 			return 0
 		for self.i in self.feeds:
-			self.logger('[QUEUE] Reading entries for feed "' + self.i + '"')
+			self.logger('[FEEDS] Reading entries for feed "' + self.i + '"')
 			self.feeddat = parse(self.feeds[self.i])
 			for self.i in self.feeddat.entries:
 				self.entries.append(self.i)
@@ -149,6 +149,7 @@ def addfeed(name, url):
 	config = configreader()
 	config['feeds'][name] = url
 	config.write()
+	myFeeder.logger('[FEEDS] Feed ' + url + ' added successfully.')
 
 def printhelp():
 	options = [
