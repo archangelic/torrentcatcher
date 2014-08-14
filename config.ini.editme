@@ -1,4 +1,0 @@
-#Enter full path for torrentfolder with a trailing /
-pushkey = '<your pushbullet key here>'
-torrentfolder = '/path/to/transmission/downloads/'
-tvdbkey = '<your thetvdb api key here>'
