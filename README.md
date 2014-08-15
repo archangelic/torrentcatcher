@@ -2,13 +2,12 @@ showcatcher
 ===========
 ###Requirements
 **Python**
-* BeautifulSoup4
-* ConfigObj
-* feedparser
+* [BeautifulSoup4](http://www.crummy.com/software/BeautifulSoup/)
+* [ConfigObj](http://www.voidspace.org.uk/python/configobj.html)
+* [feedparser](https://pypi.python.org/pypi/feedparser)
 
 **Other**
-* AtomicParsley
 * transmission-remote
 
 ###Description
-Uses rss feeds from ezrss.it to gather links to send to transmission. Tags MP4 files with information gathered from http://thetvdb.com
+Takes torrent or magnet links from rss feeds you provide, parses them and sends them to transmission via the transmission-remote command line utility.
