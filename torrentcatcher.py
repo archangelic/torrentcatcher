@@ -144,7 +144,7 @@ def addfeed(name, url):
 	config = configreader()
 	config['feeds'][name] = url
 	config.write()
-	myFeeder.logger('[FEEDS] Feed ' + url + ' added successfully.')
+	myFeeder.logger('[FEEDS] Feed "' + name + '" added successfully.')
 
 def printhelp():
 	options = [
@@ -234,7 +234,7 @@ if __name__ == '__main__':
 			print "Invalid option '" + args[1] + "'"
 			print "Try using '-h' or '--help' for a list of valid options"
 	else:
-		myFeeder.logger('[TORRENTCATCHER] Starting Showcatcher')
+		myFeeder.logger('[TORRENTCATCHER] Starting Torrentcatcher')
 		myFeeder.write()
 		cachelist = os.listdir(cache)
 		cachelist.sort()
