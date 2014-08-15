@@ -54,8 +54,7 @@ class Feeder():
 		for self.i in self.feeds:
 			self.logger('[FEEDS] Reading entries for feed "' + self.i + '"')
 			self.feeddat = parse(self.feeds[self.i])
-			for self.i in self.feeddat.entries:
-				self.entries.append(self.i)
+			self.entries = self.feeddat.entries
 		for self.i in self.entries:
 			self.title = self.i['title'].replace(' ', '.')
 			self.link = self.i['link']
