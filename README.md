@@ -2,7 +2,6 @@ showcatcher
 ===========
 ###Requirements
 **Python**
-* [BeautifulSoup4](http://www.crummy.com/software/BeautifulSoup/)
 * [ConfigObj](http://www.voidspace.org.uk/python/configobj.html)
 * [feedparser](https://pypi.python.org/pypi/feedparser)
 

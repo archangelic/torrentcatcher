@@ -1,11 +1,8 @@
 #!/usr/bin/python
-import requests, os, feedparser, sys, subprocess, shlex, validate
+import os, sys, subprocess, shlex, validate
 import os.path as path
 from datetime import datetime
 from feedparser import parse
-from urllib2 import urlopen
-from urllib import urlretrieve
-from bs4 import BeautifulSoup as soup
 from configobj import ConfigObj as configobj
 
 args = sys.argv
