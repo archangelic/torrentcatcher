@@ -10,12 +10,12 @@ args = sys.argv
 appPath = path.dirname(path.abspath(__file__))
 if appPath == '':
 	appPath = "."
-dataPath = path.join(appPath, '.showcatcher')
+dataPath = path.join(appPath, '.torrentcatcher')
 	
 keys = {
 	'archive' : path.join(dataPath, 'archive'),
 	'cache' : path.join(dataPath, 'cache'),
-	'log' : path.join(dataPath, 'showcatcher.log'),
+	'log' : path.join(dataPath, 'torrentcatcher.log'),
 	'config' : path.join(dataPath, 'config')}
 
 if path.isdir(dataPath) == False:
@@ -111,9 +111,7 @@ def configreader():
 		password = string(default='')
 		download_directory = string(default='')
 		
-		[feeds]
-		# Example:
-		# feedname = http://url.to/feed.rss"""
+		[feeds]"""
 	spec = cfg.split("\n")
 	config = configobj(configfile, configspec=spec)
 	validator = validate.Validator()
@@ -151,7 +149,7 @@ def addfeed(name, url):
 def printhelp():
 	options = [
 		'                                                                                ',
-		'Available options for Showcatcher:',
+		'Available options for Torrentcatcher:',
 		' -a   --archive                            Moves all currently queued torrents',
 		'                                           to the archive',
 		' -d   --download                           Sends all queued torrents to Trans-',
@@ -168,7 +166,7 @@ def printhelp():
 		print each
 	
 def logreader():
-	logcmd = "sed -n '/\[SHOWCATCHER\]/=' " + keys['log']
+	logcmd = "sed -n '/\[TORRENTCATCHER\]/=' " + keys['log']
 	logproc = subprocess.Popen(shlex.split(logcmd), stdout=subprocess.PIPE)
 	output = logproc.communicate()
 	lines = output[0].split('\n')
@@ -236,18 +234,18 @@ if __name__ == '__main__':
 			print "Invalid option '" + args[1] + "'"
 			print "Try using '-h' or '--help' for a list of valid options"
 	else:
-		myFeeder.logger('[SHOWCATCHER] Starting Showcatcher')
+		myFeeder.logger('[TORRENTCATCHER] Starting Showcatcher')
 		myFeeder.write()
 		cachelist = os.listdir(cache)
 		cachelist.sort()
 		if cachelist == []:
-			myFeeder.logger('[SHOWCATCHER COMPLETE] No torrents to download')
+			myFeeder.logger('[TORRENTCATCHER COMPLETE] No torrents to download')
 		else:
 			errors = 0
 			for each in cachelist:
 				test = transmission(each, host, port, auth, authopt, downdir)
 				errors += test
 			if errors > 0:
-				myFeeder.logger('[SHOWCATCHER COMPLETE] There were errors adding torrents to Transmission')
+				myFeeder.logger('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
 			else:
-				myFeeder.logger('[SHOWCATCHER COMPLETE] Initiated all downloads successfully')
+				myFeeder.logger('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')

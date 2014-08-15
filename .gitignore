@@ -52,5 +52,5 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
-# Showcatcher stuff
-.showcatcher/
+# Torrentcatcher stuff
+.torrentcatcher/
