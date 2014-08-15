@@ -49,7 +49,7 @@ class Feeder():
 		self.config = configobj(self.configfile)
 		self.feeds = self.config['feeds']
 		if self.feeds == {}:
-			self.logger("[ERROR] No feeds found in feeds file! Use '-f' or '--add-feed' options to add episode feeds")
+			self.logger("[ERROR] No feeds found in feeds file! Use '-f' or '--add-feed' options to add torrent feeds")
 			return 0
 		for self.i in self.feeds:
 			self.logger('[FEEDS] Reading entries for feed "' + self.i + '"')
@@ -73,7 +73,7 @@ class Feeder():
 					self.logger('[QUEUED] ' + self.title + ' was added to queue')
 		self.total = self.count['arc'] + self.count['cache'] + self.count['write']
 		if (self.total) != 0:
-			self.logger('[QUEUE COMPLETE] New Episodes: ' + str(self.count['write']))
+			self.logger('[QUEUE COMPLETE] New Torrents: ' + str(self.count['write']))
 			self.logger('[QUEUE COMPLETE] Already Queued: ' + str(self.count['cache']))
 			self.logger('[QUEUE COMPLETE] Already Archived: ' + str(self.count['arc']))
 		else:
@@ -87,11 +87,11 @@ class Feeder():
 	def lister(self):
 		if self.cachelist != []:
 			self.cachelist.sort()
-			print 'Episodes queued for download:'
+			print 'Torrents queued for download:'
 			for self.each in self.cachelist:
 				print self.each
 		else:
-			print 'No episodes queued for download.'
+			print 'No torrents queued for download.'
 			
 	def logger(self, message):
 		self.message = message
@@ -152,16 +152,16 @@ def printhelp():
 	options = [
 		'                                                                                ',
 		'Available options for Showcatcher:',
-		' -a   --archive                            Moves all currently queued episodes',
+		' -a   --archive                            Moves all currently queued torrents',
 		'                                           to the archive',
-		' -d   --download                           Sends all queued episodes to Trans-',
+		' -d   --download                           Sends all queued torrents to Trans-',
 		'                                           mission',
 		' -f   --add-feed        <name> <url>       Appends the given URL to the list of',
 		'                                           feeds',
 		' -h   --help                               Displays this help page',
-		' -l   --list                               Lists all queued episodes',
+		' -l   --list                               Lists all queued torrents',
 		' -L   --log                                Shows log from most recent full run',
-		' -q   --queue                              Checks all feeds for new episodes to',
+		' -q   --queue                              Checks all feeds for new torrents to',
 		'                                           add to the queue. DOES NOT SEND TO ',
 		'                                           TRANSMISSION.']
 	for each in options:
@@ -198,24 +198,24 @@ if __name__ == '__main__':
 	downdir = trconfig['download_directory']
 	if len(args) >= 2:
 		if (args[1] == '-a') | (args[1] == '--archive'):
-			myFeeder.logger('[ARCHIVE ONLY] Moving all episodes in queue to the archive')
+			myFeeder.logger('[ARCHIVE ONLY] Moving all torrents in queue to the archive')
 			if cachelist == []:
-				myFeeder.logger('[ARCHIVE COMPLETE] No episodes to archive')
+				myFeeder.logger('[ARCHIVE COMPLETE] No torrents to archive')
 			else:
 				for each in cachelist:
 					myFeeder.move(each)
-				myFeeder.logger('[ARCHIVE COMPLETE] All episodes archived successfully')		
+				myFeeder.logger('[ARCHIVE COMPLETE] All torrents archived successfully')		
 		elif (args[1] == '-d') | (args[1] == '--download'):
-			myFeeder.logger('[DOWNLOAD ONLY] Starting download of already queued episodes')
+			myFeeder.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
 			if cachelist == []:
-				myFeeder.logger('[DOWNLOAD COMPLETE] No episodes to download')
+				myFeeder.logger('[DOWNLOAD COMPLETE] No torrents to download')
 			else:
 				errors = 0
 				for each in cachelist:
 					test = transmission(each, host, port, auth, authopt, downdir)
 					errors += test
 				if errors > 0:
-					myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding episodes to Transmission')
+					myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
 				else:
 					myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
 		elif (args[1] == '-f') | (args[1] == '--add-feed'):
@@ -230,7 +230,7 @@ if __name__ == '__main__':
 		elif (args[1] == '-L') | (args[1] == '--log'):
 			logreader()
 		elif (args[1] == '-q') | (args[0] == '--queue'):
-			myFeeder.logger('[QUEUE ONLY] Checking feeds for new episodes to queue')
+			myFeeder.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
 			myFeeder.write()
 		else:
 			print "Invalid option '" + args[1] + "'"
@@ -241,13 +241,13 @@ if __name__ == '__main__':
 		cachelist = os.listdir(cache)
 		cachelist.sort()
 		if cachelist == []:
-			myFeeder.logger('[SHOWCATCHER COMPLETE] No episodes to download')
+			myFeeder.logger('[SHOWCATCHER COMPLETE] No torrents to download')
 		else:
 			errors = 0
 			for each in cachelist:
 				test = transmission(each, host, port, auth, authopt, downdir)
 				errors += test
 			if errors > 0:
-				myFeeder.logger('[SHOWCATCHER COMPLETE] There were errors adding episodes to Transmission')
+				myFeeder.logger('[SHOWCATCHER COMPLETE] There were errors adding torrents to Transmission')
 			else:
 				myFeeder.logger('[SHOWCATCHER COMPLETE] Initiated all downloads successfully')
