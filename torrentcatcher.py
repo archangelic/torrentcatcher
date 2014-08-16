@@ -226,7 +226,7 @@ if __name__ == '__main__':
 			myFeeder.lister()
 		elif (args[1] == '-L') | (args[1] == '--log'):
 			logreader()
-		elif (args[1] == '-q') | (args[0] == '--queue'):
+		elif (args[1] == '-q') | (args[1] == '--queue'):
 			myFeeder.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
 			myFeeder.write()
 		else:
