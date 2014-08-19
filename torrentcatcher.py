@@ -1,11 +1,9 @@
 #!/usr/bin/python
-import os, sys, subprocess, shlex, validate
+import os, subprocess, shlex, validate, argparse
 import os.path as path
 from datetime import datetime
 from feedparser import parse
 from configobj import ConfigObj as configobj
-
-args = sys.argv
 
 appPath = path.dirname(path.abspath(__file__))
 if appPath == '':
@@ -119,14 +117,19 @@ def configreader():
 	config.write()
 	return config
 
-def transmission(title, host, port, auth, authopt, downdir):
+def transmission(title, trconfig):
+	host = trconfig['hostname']
+	port = trconfig['port']
+	auth = trconfig['require_auth']
+	authopt = trconfig['username'] + ':' + trconfig['password']
+	downdir = trconfig['download_directory']
 	myFeeder.logger('[TRANSMISSION] Starting download for ' + title)
 	with open(path.join(cache, title), 'r') as myfile:
 		url = myfile.read()
 	if auth == False:
 		command = 'transmission-remote ' + host + ':' + port + ' -a "' + url + '"'
 	else:
-		command = 'transmission-remote  ' + host + ':' + port + ' -a "' + url + '" -n ' + authopt
+		command = 'transmission-remote  ' + host + ':' + port + ' -n ' + authopt + ' -a "' + url + '"'
 	if downdir != '':
 		command = command + ' -w ' + downdir
 	transcmd = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -144,25 +147,6 @@ def addfeed(name, url):
 	config['feeds'][name] = url
 	config.write()
 	myFeeder.logger('[FEEDS] Feed "' + name + '" added successfully.')
-
-def printhelp():
-	options = [
-		'                                                                                ',
-		'Available options for Torrentcatcher:',
-		' -a   --archive                            Moves all currently queued torrents',
-		'                                           to the archive',
-		' -d   --download                           Sends all queued torrents to Trans-',
-		'                                           mission',
-		' -f   --add-feed        <name> <url>       Appends the given URL to the list of',
-		'                                           feeds',
-		' -h   --help                               Displays this help page',
-		' -l   --list                               Lists all queued torrents',
-		' -L   --log                                Shows log from most recent full run',
-		' -q   --queue                              Checks all feeds for new torrents to',
-		'                                           add to the queue. DOES NOT SEND TO ',
-		'                                           TRANSMISSION.']
-	for each in options:
-		print each
 	
 def logreader():
 	logcmd = "sed -n '/\[TORRENTCATCHER\]/=' " + keys['log']
@@ -188,51 +172,47 @@ if __name__ == '__main__':
 	cachelist.sort()
 	config = configreader()
 	trconfig = config['transmission']
-	host = trconfig['hostname']
-	port = trconfig['port']
-	auth = trconfig['require_auth']
-	authopt = trconfig['username'] + ':' + trconfig['password']
-	downdir = trconfig['download_directory']
-	if len(args) >= 2:
-		if (args[1] == '-a') | (args[1] == '--archive'):
-			myFeeder.logger('[ARCHIVE ONLY] Moving all torrents in queue to the archive')
-			if cachelist == []:
-				myFeeder.logger('[ARCHIVE COMPLETE] No torrents to archive')
-			else:
-				for each in cachelist:
-					myFeeder.move(each)
-				myFeeder.logger('[ARCHIVE COMPLETE] All torrents archived successfully')		
-		elif (args[1] == '-d') | (args[1] == '--download'):
-			myFeeder.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
-			if cachelist == []:
-				myFeeder.logger('[DOWNLOAD COMPLETE] No torrents to download')
-			else:
-				errors = 0
-				for each in cachelist:
-					test = transmission(each, host, port, auth, authopt, downdir)
-					errors += test
-				if errors > 0:
-					myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
-				else:
-					myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
-		elif (args[1] == '-f') | (args[1] == '--add-feed'):
-			if len(args) == 4:
-				addfeed(args[2], args[3])
-			else:
-				print "The option '" + args[1] + "' takes exactly 2 arguments: <name> <url>. Please enter both in that order."
-		elif (args[1] == '-h') | (args[1] == '--help'):
-			printhelp()				
-		elif (args[1] == '-l') | (args[1] == '--list'):
-			myFeeder.lister()
-		elif (args[1] == '-L') | (args[1] == '--log'):
-			logreader()
-		elif (args[1] == '-q') | (args[1] == '--queue'):
-			myFeeder.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
-			myFeeder.write()
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-a', '--archive', help="Moves all currently queued torrents to the archive.", action="store_true")
+	parser.add_argument('-d', '--download', help="Sends all queued torrents to Transmission.", action="store_true")
+	parser.add_argument('-f', '--add-feed', help="Brings up the add feed utility.", action="store_true")
+	parser.add_argument('-l', '--list', help="Lists all queued torrents.", action="store_true")
+	parser.add_argument('-L', '--log', help="Shows log from most recent full run.", action="store_true")
+	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
+	args = parser.parse_args()
+	if args.archive == True:
+		myFeeder.logger('[ARCHIVE ONLY] Moving all torrents in queue to the archive')
+		if cachelist == []:
+			myFeeder.logger('[ARCHIVE COMPLETE] No torrents to archive')
 		else:
-			print "Invalid option '" + args[1] + "'"
-			print "Try using '-h' or '--help' for a list of valid options"
-	else:
+			for each in cachelist:
+				myFeeder.move(each)
+			myFeeder.logger('[ARCHIVE COMPLETE] All torrents archived successfully')
+	if args.download == True:
+		myFeeder.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
+		if cachelist == []:
+			myFeeder.logger('[DOWNLOAD COMPLETE] No torrents to download')
+		else:
+			errors = 0
+			for each in cachelist:
+				test = transmission(each, trconfig)
+				errors += test
+			if errors > 0:
+				myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
+			else:
+				myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
+	if args.add_feed == True:
+		name = raw_input('Enter name for feed: ')
+		url = raw_input('Enter URL for feed: ')
+		addfeed(name, url)
+	if args.list == True:
+		myFeeder.lister()
+	if args.log == True:
+		logreader()
+	if args.queue == True:
+		myFeeder.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
+		myFeeder.write()
+	if (args.archive == False) & (args.download==False) & (args.add_feed==False) & (args.list==False) & (args.log==False) & (args.queue==False):
 		myFeeder.logger('[TORRENTCATCHER] Starting Torrentcatcher')
 		myFeeder.write()
 		cachelist = os.listdir(cache)
@@ -242,7 +222,7 @@ if __name__ == '__main__':
 		else:
 			errors = 0
 			for each in cachelist:
-				test = transmission(each, host, port, auth, authopt, downdir)
+				test = transmission(each, trconfig)
 				errors += test
 			if errors > 0:
 				myFeeder.logger('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
