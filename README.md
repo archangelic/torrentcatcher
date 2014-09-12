@@ -1,11 +1,6 @@
 torrentcatcher
 ===========
 ###Requirements
-**Python**
-* [ConfigObj](http://www.voidspace.org.uk/python/configobj.html)
-* [feedparser](https://pypi.python.org/pypi/feedparser)
-
-**Other**
 * transmission-remote
 
 ###Description
@@ -18,7 +13,7 @@ $ cd torrentcatcher/
 $ ./torrentcatcher.py
 ```
 This will start the script, and give you an error about there being no feeds.
-This will also check for the relevant data files, and, if they do not exist, create them in the `<path>/torrentcatcher/.torrentcatcher/` directory
+This will also check for the relevant data files, and, if they do not exist, create them in the `<path>/torrentcatcher/data/` directory
 The `config` file will be in there with some default values already filled in:
 ```
 [transmission]

@@ -1,14 +1,24 @@
 #!/usr/bin/python
-import os, subprocess, shlex, validate, argparse
+#Modules from standard Python
+import os, subprocess, shlex, sys
 import os.path as path
 from datetime import datetime
-from feedparser import parse
-from configobj import ConfigObj as configobj
 
+#Finds the location of torrentcatcher
 appPath = path.dirname(path.abspath(__file__))
 if appPath == '':
 	appPath = "."
-dataPath = path.join(appPath, '.torrentcatcher')
+dataPath = path.join(appPath, 'data')
+
+#Imports 
+libPath = path.join(appPath, 'lib')
+modules = [path.join(libPath, 'validate'), path.join(libPath, 'argparse'), path.join(libPath, 'feedparser'), path.join(libPath, 'configobj')]
+sys.path.append(libPath)
+for each in modules:
+	sys.path.append(each)
+import validate, argparse
+from feedparser import parse
+from configobj import ConfigObj as configobj
 	
 keys = {
 	'archive' : path.join(dataPath, 'archive'),
