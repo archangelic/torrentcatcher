@@ -3,6 +3,7 @@
 import os, subprocess, shlex, sys
 import os.path as path
 from datetime import datetime
+import sqlite3 as lite
 
 #Finds the location of torrentcatcher
 appPath = path.dirname(path.abspath(__file__))
@@ -21,35 +22,30 @@ from feedparser import parse
 from configobj import ConfigObj as configobj
 	
 keys = {
-	'archive' : path.join(dataPath, 'archive'),
-	'cache' : path.join(dataPath, 'cache'),
 	'log' : path.join(dataPath, 'torrentcatcher.log'),
-	'config' : path.join(dataPath, 'config')}
+	'config' : path.join(dataPath, 'config'),
+	'database' : path.join(dataPath, 'torcatch.db')}
 
 if path.isdir(dataPath) == False:
 	os.mkdir(dataPath)
-
-if path.isdir(keys['cache']) == False:
-	os.mkdir(keys['cache'])
 	
-if path.isdir(keys['archive']) == False:
-	os.mkdir(keys['archive'])
+# Creates database if it does not exist:
+con = lite.connect(keys['database'])
+cur = con.cursor()
+cur.execute('CREATE TABLE IF NOT EXISTS Torrents(Id INTEGER PRIMARY KEY, Name TEXT, URL TEXT, downStatus BOOLEAN);')
+con.commit()
 	
 class Feeder():
 	def __init__(self, keys):
 		self.configfile = keys['config']
-		self.archive = keys['archive']
-		self.cache = keys['cache']
 		self.log = keys['log']
-		self.arcdict = {}
-		self.cachedict = {}
-		self.arclist = os.listdir(self.archive)
-		self.cachelist = os.listdir(self.cache)
-		self.cachelist.sort()
-		for self.i in self.arclist:
-			self.arcdict[self.i] = '1'
-		for self.i in self.cachelist:
-			self.cachedict[self.i] = '1'
+		self.tcdb = keys['database']
+		self.con = lite.connect(self.tcdb)
+		self.cur = self.con.cursor()
+		self.cur.execute("SELECT * FROM Torrents WHERE downStatus=1")
+		self.arclist = self.cur.fetchall()
+		self.cur.execute("SELECT * FROM Torrents WHERE downStatus=0")
+		self.cachelist = self.cur.fetchall()
 				
 	def write(self):
 		self.entries = []
@@ -64,20 +60,22 @@ class Feeder():
 			self.feeddat = parse(self.feeds[self.i])
 			self.entries = self.feeddat.entries
 		for self.i in self.entries:
-			self.title = self.i['title'].replace(' ', '.')
+			self.title = self.i['title']
 			self.link = self.i['link']
-			try:
-				if self.arcdict[self.title]:
+			self.cur.execute("SELECT EXISTS(SELECT * FROM Torrents WHERE Name='%s');" % (self.title))
+			self.test = self.cur.fetchall()
+			if self.test[0][0] != 1:
+				self.cur.execute("INSERT INTO Torrents(Name, URL, downStatus) VALUES ('%s', '%s', 0);" % (self.title, self.link))
+				self.count['write'] += 1
+				self.logger('[QUEUED] ' + self.title + ' was added to queue')
+			else:
+				self.cur.execute("SELECT * FROM Torrents WHERE Name='%s'" % (self.title))
+				self.status = self.cur.fetchall()
+				if self.status[0][3] == 1:
 					self.count['arc'] += 1
-			except:
-				try:
-					if self.cachedict[self.title]:
-						self.count['cache'] += 1
-				except:
-					with open(path.join(self.cache, self.title), 'w') as self.myfile:
-						self.myfile.write(self.link)
-					self.count['write'] += 1
-					self.logger('[QUEUED] ' + self.title + ' was added to queue')
+				elif self.status[0][3] == 0:
+					self.count['cache'] += 1
+			self.con.commit()
 		self.total = self.count['arc'] + self.count['cache'] + self.count['write']
 		if (self.total) != 0:
 			self.logger('[QUEUE COMPLETE] New Torrents: ' + str(self.count['write']))
@@ -88,15 +86,15 @@ class Feeder():
 						
 	def move(self, title):
 		self.title = title
-		os.rename(path.join(self.cache, self.title), path.join(self.archive, self.title))
+		self.cur.execute("UPDATE Torrents SET downStatus=1 WHERE Name='%s'" % (self.title))
+		self.con.commit()
 		self.logger('[ARCHIVED] ' + self.title + ' was moved to archive.')
 		
 	def lister(self):
 		if self.cachelist != []:
-			self.cachelist.sort()
 			print 'Torrents queued for download:'
 			for self.each in self.cachelist:
-				print self.each
+				print self.each[1]
 		else:
 			print 'No torrents queued for download.'
 			
@@ -127,15 +125,13 @@ def configreader():
 	config.write()
 	return config
 
-def transmission(title, trconfig):
+def transmission(title, url, trconfig):
 	host = trconfig['hostname']
 	port = trconfig['port']
 	auth = trconfig['require_auth']
 	authopt = trconfig['username'] + ':' + trconfig['password']
 	downdir = trconfig['download_directory']
 	myFeeder.logger('[TRANSMISSION] Starting download for ' + title)
-	with open(path.join(cache, title), 'r') as myfile:
-		url = myfile.read()
 	if auth == False:
 		command = 'transmission-remote ' + host + ':' + port + ' -a "' + url + '"'
 	else:
@@ -177,10 +173,9 @@ def logreader():
 			print each
 	
 if __name__ == '__main__':
-	cache = keys['cache']
-	cachelist = os.listdir(cache)
-	cachelist.sort()
 	config = configreader()
+	cur.execute("SELECT * FROM Torrents WHERE downStatus=0")
+	cachelist = cur.fetchall()
 	trconfig = config['transmission']
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-a', '--archive', help="Moves all currently queued torrents to the archive.", action="store_true")
@@ -192,12 +187,14 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	if args.archive == True:
 		myFeeder.logger('[ARCHIVE ONLY] Moving all torrents in queue to the archive')
+		cur.execute("SELECT * FROM Torrents WHERE downStatus=0")
+		cachelist = cur.fetchall()
 		if cachelist == []:
 			myFeeder.logger('[ARCHIVE COMPLETE] No torrents to archive')
 		else:
 			for each in cachelist:
-				myFeeder.move(each)
-			myFeeder.logger('[ARCHIVE COMPLETE] All torrents archived successfully')
+				myFeeder.move(each[1])
+		myFeeder.logger('[ARCHIVE COMPLETE] All torrents archived successfully')
 	if args.download == True:
 		myFeeder.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
 		if cachelist == []:
@@ -225,14 +222,14 @@ if __name__ == '__main__':
 	if (args.archive == False) & (args.download==False) & (args.add_feed==False) & (args.list==False) & (args.log==False) & (args.queue==False):
 		myFeeder.logger('[TORRENTCATCHER] Starting Torrentcatcher')
 		myFeeder.write()
-		cachelist = os.listdir(cache)
-		cachelist.sort()
+		cur.execute("SELECT * FROM Torrents WHERE downStatus=0")
+		cachelist = cur.fetchall()
 		if cachelist == []:
 			myFeeder.logger('[TORRENTCATCHER COMPLETE] No torrents to download')
 		else:
 			errors = 0
 			for each in cachelist:
-				test = transmission(each, trconfig)
+				test = transmission(each[1], each[2], trconfig)
 				errors += test
 			if errors > 0:
 				myFeeder.logger('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
