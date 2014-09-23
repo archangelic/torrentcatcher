@@ -13,12 +13,13 @@ dataPath = path.join(appPath, 'data')
 
 # Imports modules from lib directory
 libPath = path.join(appPath, 'lib')
-modules = [path.join(libPath, 'validate'), path.join(libPath, 'argparse'), path.join(libPath, 'feedparser'), path.join(libPath, 'configobj')]
+modules = [path.join(libPath, 'validate'), path.join(libPath, 'argparse'), path.join(libPath, 'feedparser'), path.join(libPath, 'configobj'), path.join(libPath, 'tabulate')]
 sys.path.append(libPath)
 for each in modules:
 	sys.path.append(each)
 import validate, argparse
 from feedparser import parse
+from tabulate import tabulate
 from configobj import ConfigObj as configobj
 	
 # Dictionary of values several functions use
@@ -182,6 +183,40 @@ def logreader():
 	for each in output:
 		if each != '':
 			print each
+			
+def torsearch(category):
+	query = raw_input('Enter query: ')
+	resultlist = []
+	if category == 'id':
+		try:
+			qtest = int(query)
+			cur.execute("SELECT * FROM torrents WHERE id LIKE '%{0}%'".format(query))
+			results = cur.fetchall()
+			if results == []:
+				print "No results found in '{0}' for '{1}".format(category, query)
+			else:
+				for each in results:
+					if each[4] == 0:
+						status = 'Queue'
+					elif each[4] == 1:
+						status = 'Archive'
+					resultlist.append([each[0], each[1], each[3], status])
+				print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
+		except:
+			print "Please enter a valid ID number for ID searches."
+	else:
+		cur.execute("SELECT * FROM torrents WHERE {0} LIKE '%{1}%'".format(category, query))
+		results = cur.fetchall()
+		if results == []:
+			print "No results found in '{0}' for '{1}".format(category, query)
+		else:
+			for each in results:
+				if each[4] == 0:
+					status = 'Queue'
+				elif each[4] == 1:
+					status = 'Archive'
+				resultlist.append([each[0], each[1], each[3], status])
+			print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
 	
 if __name__ == '__main__':
 	config = configreader()
@@ -195,7 +230,9 @@ if __name__ == '__main__':
 	parser.add_argument('-l', '--list', help="Lists all queued torrents and their IDs.", action="store_true")
 	parser.add_argument('-L', '--log', help="Shows log from most recent full run.", action="store_true")
 	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
+	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
 	args = parser.parse_args()
+	print args
 	if args.archive != None:
 		myFeeder.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
 		if args.archive[0] == 'all':
@@ -258,7 +295,9 @@ if __name__ == '__main__':
 	if args.queue == True:
 		myFeeder.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
 		myFeeder.write()
-	if (args.archive==None) & (args.download==None) & (args.add_feed==False) & (args.list==False) & (args.log==False) & (args.queue==False):
+	if args.search != None:
+		torsearch(args.search[0])
+	if (args.archive==None) & (args.download==None) & (args.add_feed==False) & (args.list==False) & (args.log==False) & (args.queue==False) & (args.search==None):
 		myFeeder.logger('[TORRENTCATCHER] Starting Torrentcatcher')
 		myFeeder.write()
 		cur.execute("SELECT * FROM torrents WHERE downStatus=0")
