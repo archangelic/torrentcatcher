@@ -190,7 +190,7 @@ def torsearch(category):
 	if category == 'id':
 		try:
 			qtest = int(query)
-			cur.execute("SELECT * FROM torrents WHERE id LIKE '%{0}%'".format(query))
+			cur.execute("SELECT * FROM torrents WHERE id LIKE '{0}'".format(query))
 			results = cur.fetchall()
 			if results == []:
 				print "No results found in '{0}' for '{1}".format(category, query)
