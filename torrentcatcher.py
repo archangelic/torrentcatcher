@@ -232,7 +232,6 @@ if __name__ == '__main__':
 	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
 	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
 	args = parser.parse_args()
-	print args
 	if args.archive != None:
 		myFeeder.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
 		if args.archive[0] == 'all':
