@@ -32,7 +32,7 @@ if path.isdir(dataPath) == False:
 # Creates database if it does not exist:
 con = lite.connect(keys['database'])
 cur = con.cursor()
-cur.execute('CREATE TABLE IF NOT EXISTS Torrents(Id INTEGER PRIMARY KEY, Name TEXT, URL TEXT, downStatus BOOLEAN);')
+cur.execute('CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);')
 con.commit()
 	
 class Feeder():
@@ -59,23 +59,24 @@ class Feeder():
 			self.logger('[FEEDS] Reading entries for feed "' + self.i + '"')
 			self.feeddat = parse(self.feeds[self.i])
 			self.entries = self.feeddat.entries
-		for self.i in self.entries:
-			self.title = self.i['title']
-			self.link = self.i['link']
-			self.cur.execute("SELECT EXISTS(SELECT * FROM Torrents WHERE Name='%s');" % (self.title))
-			self.test = self.cur.fetchall()
-			if self.test[0][0] != 1:
-				self.cur.execute("INSERT INTO Torrents(Name, URL, downStatus) VALUES ('%s', '%s', 0);" % (self.title, self.link))
-				self.count['write'] += 1
-				self.logger('[QUEUED] ' + self.title + ' was added to queue')
-			else:
-				self.cur.execute("SELECT * FROM Torrents WHERE Name='%s'" % (self.title))
-				self.status = self.cur.fetchall()
-				if self.status[0][3] == 1:
-					self.count['arc'] += 1
-				elif self.status[0][3] == 0:
-					self.count['cache'] += 1
-			self.con.commit()
+			self.feedname = self.i
+			for self.i in self.entries:
+				self.title = self.i['title']
+				self.link = self.i['link']
+				self.cur.execute("SELECT EXISTS(SELECT * FROM torrents WHERE name='%s');" % (self.title))
+				self.test = self.cur.fetchall()
+				if self.test[0][0] != 1:
+					self.cur.execute("INSERT INTO torrents(name, url, source, downStatus) VALUES ('%s', '%s', '%s', 0);" % (self.title, self.link, self.feedname))
+					self.count['write'] += 1
+					self.logger('[QUEUED] ' + self.title + ' was added to queue')
+				else:
+					self.cur.execute("SELECT * FROM torrents WHERE name='%s'" % (self.title))
+					self.status = self.cur.fetchall()
+					if self.status[0][4] == 1:
+						self.count['arc'] += 1
+					elif self.status[0][4] == 0:
+						self.count['cache'] += 1
+				self.con.commit()
 		self.total = self.count['arc'] + self.count['cache'] + self.count['write']
 		if (self.total) != 0:
 			self.logger('[QUEUE COMPLETE] New Torrents: ' + str(self.count['write']))
@@ -86,7 +87,7 @@ class Feeder():
 						
 	def move(self, title):
 		self.title = title
-		self.cur.execute("UPDATE Torrents SET downStatus=1 WHERE Name='%s'" % (self.title))
+		self.cur.execute("UPDATE torrents SET downStatus=1 WHERE name='%s'" % (self.title))
 		self.con.commit()
 		self.logger('[ARCHIVED] ' + self.title + ' was moved to archive.')
 		
@@ -94,7 +95,7 @@ class Feeder():
 		if self.cachelist != []:
 			print 'Torrents queued for download:'
 			for self.each in self.cachelist:
-				print self.each[1]
+				print '[ID %s]' % (self.each[0]), self.each[1]
 		else:
 			print 'No torrents queued for download.'
 			
@@ -174,40 +175,68 @@ def logreader():
 	
 if __name__ == '__main__':
 	config = configreader()
-	cur.execute("SELECT * FROM Torrents WHERE downStatus=0")
+	cur.execute("SELECT * FROM torrents WHERE downStatus=0")
 	cachelist = cur.fetchall()
 	trconfig = config['transmission']
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-a', '--archive', help="Moves all currently queued torrents to the archive.", action="store_true")
-	parser.add_argument('-d', '--download', help="Sends all queued torrents to Transmission.", action="store_true")
-	parser.add_argument('-f', '--add-feed', help="Brings up the add feed utility.", action="store_true")
-	parser.add_argument('-l', '--list', help="Lists all queued torrents.", action="store_true")
+	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
+	parser.add_argument('-d', '--download', nargs='+', metavar='all|ID', help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
+	parser.add_argument('-f', '--add-feed', help="Starts the add feed utility.", action="store_true")
+	parser.add_argument('-l', '--list', help="Lists all queued torrents and their IDs.", action="store_true")
 	parser.add_argument('-L', '--log', help="Shows log from most recent full run.", action="store_true")
 	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
 	args = parser.parse_args()
-	if args.archive == True:
-		myFeeder.logger('[ARCHIVE ONLY] Moving all torrents in queue to the archive')
-		cur.execute("SELECT * FROM Torrents WHERE downStatus=0")
-		cachelist = cur.fetchall()
-		if cachelist == []:
-			myFeeder.logger('[ARCHIVE COMPLETE] No torrents to archive')
+	if args.archive != None:
+		myFeeder.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
+		if args.archive[0] == 'all':
+			cur.execute("SELECT * FROM torrents WHERE downStatus=0")
+			cachelist = cur.fetchall()
+			if cachelist == []:
+				myFeeder.logger('[ARCHIVE COMPLETE] No torrents to archive')
+			else: 
+				for each in cachelist:
+					myFeeder.move(each[1])
+				myFeeder.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
 		else:
-			for each in cachelist:
-				myFeeder.move(each[1])
-		myFeeder.logger('[ARCHIVE COMPLETE] All torrents archived successfully')
-	if args.download == True:
+			for each in args.archive:
+				if each != 'all':
+					cur.execute("SELECT * FROM torrents WHERE id=%s" % (each))
+					selection = cur.fetchall()
+					seltor = selection[0]
+					if seltor[4] == 0:
+						myFeeder.move(seltor[1])
+					elif seltor[4] == 1:
+						myFeeder.logger('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
+			myFeeder.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
+	if args.download != None:
 		myFeeder.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
-		if cachelist == []:
-			myFeeder.logger('[DOWNLOAD COMPLETE] No torrents to download')
+		if args.download[0] == 'all':
+			cur.execute("SELECT * FROM torrents WHERE downStatus=0")
+			cachelist = cur.fetchall()
+			if cachelist == []:
+				myFeeder.logger('[DOWNLOAD COMPLETE] No torrents to download')
+			else:
+				errors = 0
+				for each in cachelist:
+					test = transmission(each[1], each[2], trconfig)
+					errors += test
+				if errors > 0:
+					myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
+				else:
+					myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
 		else:
 			errors = 0
-			for each in cachelist:
-				test = transmission(each, trconfig)
-				errors += test
+			for each in args.archive:
+				if each != 'all':
+					cur.execute("SELECT * FROM torrents WHERE id=%s" % (each))
+					selection = cur.fetchall()
+					seltor = selction[0]
+					test = transmission(seltor[1], seltor[2], trconfig)
+					errors +=test
 			if errors > 0:
 				myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
 			else:
-				myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
+				myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')					
 	if args.add_feed == True:
 		name = raw_input('Enter name for feed: ')
 		url = raw_input('Enter URL for feed: ')
@@ -219,10 +248,10 @@ if __name__ == '__main__':
 	if args.queue == True:
 		myFeeder.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
 		myFeeder.write()
-	if (args.archive == False) & (args.download==False) & (args.add_feed==False) & (args.list==False) & (args.log==False) & (args.queue==False):
+	if (args.archive==None) & (args.download==None) & (args.add_feed==False) & (args.list==False) & (args.log==False) & (args.queue==False):
 		myFeeder.logger('[TORRENTCATCHER] Starting Torrentcatcher')
 		myFeeder.write()
-		cur.execute("SELECT * FROM Torrents WHERE downStatus=0")
+		cur.execute("SELECT * FROM torrents WHERE downStatus=0")
 		cachelist = cur.fetchall()
 		if cachelist == []:
 			myFeeder.logger('[TORRENTCATCHER COMPLETE] No torrents to download')
