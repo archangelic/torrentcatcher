@@ -1,17 +1,17 @@
 #!/usr/bin/python
-#Modules from standard Python
+# Modules from standard Python
 import os, subprocess, shlex, sys
 import os.path as path
 from datetime import datetime
 import sqlite3 as lite
 
-#Finds the location of torrentcatcher
+# Finds the location of torrentcatcher
 appPath = path.dirname(path.abspath(__file__))
 if appPath == '':
 	appPath = "."
 dataPath = path.join(appPath, 'data')
 
-#Imports modules from lib directory
+# Imports modules from lib directory
 libPath = path.join(appPath, 'lib')
 modules = [path.join(libPath, 'validate'), path.join(libPath, 'argparse'), path.join(libPath, 'feedparser'), path.join(libPath, 'configobj')]
 sys.path.append(libPath)
