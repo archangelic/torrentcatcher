@@ -184,6 +184,7 @@ def logreader():
 		if each != '':
 			print each
 			
+# Searches the database for a given query
 def torsearch(category):
 	query = raw_input('Enter query: ')
 	resultlist = []
@@ -220,8 +221,6 @@ def torsearch(category):
 	
 if __name__ == '__main__':
 	config = configreader()
-	cur.execute("SELECT * FROM torrents WHERE downStatus=0")
-	cachelist = cur.fetchall()
 	trconfig = config['transmission']
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
