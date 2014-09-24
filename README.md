@@ -29,6 +29,6 @@ The `config` file will be in there with some default values already filled in:
 Fill in the config file with the relevant information to access your transmission rpc session. Make sure to set `require_auth` to `True` if your transmission rpc requires a username and password.
 The `download_directory` value will override your transmission session's global download directory for torrents gathered by torrentcatcher.
 
-The `[feeds]` section is intentonally blank. Feeds can be added here manually by entering a value under that header such as `feedname = http://fake.url.to/feed.rss`, or by using the `./torrentcatcher --add-feed` utility.
+The `[feeds]` section is intentonally blank. Feeds can be added here manually by entering a value under that header such as `feedname = http://fake.url.to/feed.rss`, or by using the `./torrentcatcher.py --add-feed` utility.
 
-`./torrentcatcher -h` will reveal all available options and their descriptions.
+`./torrentcatcher.py -h` will reveal all available options and their descriptions.
