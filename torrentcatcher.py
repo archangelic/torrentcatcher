@@ -1,26 +1,17 @@
 #!/usr/bin/python
-# Modules from standard Python
-import os, subprocess, shlex, sys
-import os.path as path
-from datetime import datetime
+import argparse, shlex, subprocess, sys, validate
 import sqlite3 as lite
+from configobj import ConfigObj as configobj
+from datetime import datetime
+from feedparser import parse
+from os import path, mkdir
+from tabulate import tabulate
 
 # Finds the location of torrentcatcher
 appPath = path.dirname(path.abspath(__file__))
 if appPath == '':
 	appPath = "."
 dataPath = path.join(appPath, 'data')
-
-# Imports modules from lib directory
-libPath = path.join(appPath, 'lib')
-modules = [path.join(libPath, 'validate'), path.join(libPath, 'argparse'), path.join(libPath, 'feedparser'), path.join(libPath, 'configobj'), path.join(libPath, 'tabulate')]
-sys.path.append(libPath)
-for each in modules:
-	sys.path.append(each)
-import validate, argparse
-from feedparser import parse
-from tabulate import tabulate
-from configobj import ConfigObj as configobj
 	
 # Dictionary of values several functions use
 keys = {
@@ -31,7 +22,7 @@ keys = {
 if __name__ == '__main__':
 	# Creates data directory for config file, database, and log file
 	if path.isdir(dataPath) == False:
-		os.mkdir(dataPath)
+		mkdir(dataPath)
 	# Creates database if it does not exist:
 	con = lite.connect(keys['database'])
 	cur = con.cursor()

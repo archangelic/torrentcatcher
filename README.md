@@ -10,10 +10,12 @@ To install this for your personal use run these commands:
 ```
 $ git clone https://github.com/archangelic/torrentcatcher
 $ cd torrentcatcher/
+$ ./setup.py install
 $ ./torrentcatcher.py
 ```
-This will start the script, and give you an error about there being no feeds.
-This will also check for the relevant data files, and, if they do not exist, create them in the `<path>/torrentcatcher/data/` directory
+`setup.py` wil download and install any unmet python dependencies.
+`torrentcatcher.py` will start the script, and give you an error about there being no feeds.
+This will also check for the relevant data files, and, if they do not exist, create them in the `<torrentcatcher path>/data/` directory
 The `config` file will be in there with some default values already filled in:
 ```
 [transmission]
