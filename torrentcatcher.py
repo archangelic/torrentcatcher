@@ -1,4 +1,22 @@
 #!/usr/bin/python
+###########################################################################
+# torrentcatcher v1.0.1
+#     Copyright (C) 2014  Michael Hancock
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+#
+#     You should have received a copy of the GNU General Public License
+#     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+###########################################################################
+
 import argparse, shlex, subprocess, sys, validate
 import sqlite3 as lite
 from configobj import ConfigObj as configobj
@@ -209,7 +227,7 @@ def torsearch(category):
 if __name__ == '__main__':
 	config = configreader()
 	trconfig = config['transmission']
-	parser = argparse.ArgumentParser()
+	parser = argparse.ArgumentParser(prog='torrentcatcher')
 	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
 	parser.add_argument('-d', '--download', nargs='+', metavar='all|ID', help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
 	parser.add_argument('-f', '--add-feed', help="Starts the add feed utility.", action="store_true")
@@ -217,6 +235,7 @@ if __name__ == '__main__':
 	parser.add_argument('-L', '--log', help="Shows log from most recent full run.", action="store_true")
 	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
 	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
+	parser.add_argument('--version', action='version', version='%(prog)s 1.0.1')
 	args = parser.parse_args()
 	if args.archive != None:
 		myFeeder.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
