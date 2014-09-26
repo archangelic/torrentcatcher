@@ -15,7 +15,7 @@ $ ./torrentcatcher.py
 ```
 `setup.py` will download and install any unmet python dependencies.
 `torrentcatcher.py` will start the script, and give you an error about there being no feeds.
-This will also check for the relevant data files, and, if they do not exist, create them in the `<torrentcatcher path>/data/` directory
+This will also check for the relevant data files, and, if they do not exist, create them in the `<torrentcatcher path>/data/` directory.
 The `config` file will be in there with some default values already filled in:
 ```
 [transmission]
