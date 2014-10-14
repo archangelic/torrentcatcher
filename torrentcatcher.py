@@ -157,9 +157,6 @@ def addfeed():
 	url = raw_input('Enter URL for feed: ')
 	cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);', (name, url))
 	con.commit()
-# 	config = configreader()
-# 	config['feeds'][name] = url
-# 	config.write()
 	myFeeder.logger('[FEEDS] Feed "' + name + '" added successfully.')
 	
 # Parses out the log for the most recent run of torrentcatcher. Shows the entire log since the last time the command sans arguments ran.
@@ -289,7 +286,8 @@ def torrentcatcher(trconfig):
 			myFeeder.logger('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
 		else:
 			myFeeder.logger('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')
-			
+		
+# Function to list out given requests
 def lister(cat):
 	resultlist = []
 	down = 0
