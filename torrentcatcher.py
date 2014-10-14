@@ -45,6 +45,7 @@ if __name__ == '__main__':
 	con = lite.connect(keys['database'])
 	cur = con.cursor()
 	cur.execute('CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);')
+	cur.execute('CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, name TEXT, url TEXT);')
 	con.commit()
 
 class Feeder():
@@ -53,23 +54,22 @@ class Feeder():
 		self.log = keys['log']
 		self.con = lite.connect(keys['database'])
 		self.cur = self.con.cursor()
-		self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
-		self.cachelist = self.cur.fetchall()
 				
 	# Function to write entries from the feed to the database
 	def write(self):
 		entries = []
 		count = {'arc' : 0, 'cache' : 0, 'write' : 0}
 		config = configobj(self.configfile)
-		feeds = config['feeds']
-		if feeds == {}:
+		self.cur.execute('SELECT * FROM feeds;')
+		feeds = self.cur.fetchall()
+		if feeds == []:
 			self.logger("[ERROR] No feeds found in feeds file! Use '-f' or '--add-feed' options to add torrent feeds")
 			return 0
 		for i in feeds:
-			self.logger('[FEEDS] Reading entries for feed "' + i + '"')
-			feeddat = parse(feeds[i])
+			self.logger('[FEEDS] Reading entries for feed "' + i[1] + '"')
+			feeddat = parse(i[2])
 			entries = feeddat.entries
-			feedname = i
+			feedname = i[1]
 			for i in entries:
 				title = i['title']
 				link = i['link']
@@ -100,15 +100,6 @@ class Feeder():
 		self.cur.execute("UPDATE torrents SET downStatus=1 WHERE name=?", (title,))
 		self.con.commit()
 		self.logger('[ARCHIVED] ' + title + ' was moved to archive.')
-		
-	# Function calls for every entry with downStatus of 0 and lists the ID # and name
-	def lister(self):
-		if self.cachelist != []:
-			print 'Torrents queued for download:'
-			for each in self.cachelist:
-				print '[ID %s]' % (each[0]), each[1]
-		else:
-			print 'No torrents queued for download.'
 			
 	# Homebrewed logging solution. Any passed messages are outputted to the console as well as appended to the log
 	def logger(self, message):
@@ -127,9 +118,7 @@ def configreader():
 		require_auth = boolean(default=False)
 		username = string(default='')
 		password = string(default='')
-		download_directory = string(default='')
-		
-		[feeds]"""
+		download_directory = string(default='')"""
 	spec = cfg.split("\n")
 	config = configobj(configfile, configspec=spec)
 	validator = validate.Validator()
@@ -166,9 +155,11 @@ def transmission(title, url, trconfig):
 def addfeed():
 	name = raw_input('Enter name for feed: ')
 	url = raw_input('Enter URL for feed: ')
-	config = configreader()
-	config['feeds'][name] = url
-	config.write()
+	cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);', (name, url))
+	con.commit()
+# 	config = configreader()
+# 	config['feeds'][name] = url
+# 	config.write()
 	myFeeder.logger('[FEEDS] Feed "' + name + '" added successfully.')
 	
 # Parses out the log for the most recent run of torrentcatcher. Shows the entire log since the last time the command sans arguments ran.
@@ -298,6 +289,34 @@ def torrentcatcher(trconfig):
 			myFeeder.logger('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
 		else:
 			myFeeder.logger('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')
+			
+def lister(cat):
+	resultlist = []
+	down = 0
+	status = ''
+	if cat == 'feeds':
+		cur.execute('SELECT * FROM feeds;')
+		feedlist = cur.fetchall()
+		if feedlist == []:
+			print 'No feeds were found!'
+			print "Use the '-f' or '--add-feed' option to add feeds."
+		else:
+			for each in feedlist:
+				resultlist.append([each[0], each[1], each[2]])
+			print tabulate(resultlist, ['ID', 'Name', 'URL'], tablefmt='pipe')
+	if cat == 'archive':
+		down = 1
+		status = 'Archive'
+	if cat == 'queue':
+		down = 0
+		status = 'Queue'
+	if (cat == 'archive') or (cat == 'queue'):
+		cur.execute('SELECT * FROM torrents WHERE downStatus=?;', (down,))
+		results = cur.fetchall()
+		for each in results:
+			resultlist.append([each[0], each[1], each[3], status])
+		print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'], tablefmt='pipe')
+		
 	
 if __name__ == '__main__':
 	config = configreader()
@@ -307,7 +326,7 @@ if __name__ == '__main__':
 	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
 	parser.add_argument('-d', '--download', nargs='+', metavar='all|ID', help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
 	parser.add_argument('-f', '--add-feed', help="Starts the add feed utility.", action="store_true")
-	parser.add_argument('-l', '--list', help="Lists all queued torrents and their IDs.", action="store_true")
+	parser.add_argument('-l', '--list', nargs=1, choices=['queue', 'archive', 'feeds'], help="Lists all items for given category.")
 	parser.add_argument('-L', '--log', help="Shows log from most recent full run.", action="store_true")
 	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
 	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
@@ -320,8 +339,8 @@ if __name__ == '__main__':
 		download(args.download[0], trconfig)
 	if args.add_feed:
 		addfeed()
-	if args.list:
-		myFeeder.lister()
+	if args.list != None:
+		lister(args.list[0])
 	if args.log:
 		logreader()
 	if args.queue:
@@ -329,5 +348,5 @@ if __name__ == '__main__':
 		myFeeder.write()
 	if args.search != None:
 		torsearch(args.search[0])
-	if (args.archive==None) and (args.download==None) and (not args.add_feed) and (not args.list) and (not args.log) and (not args.queue) and (args.search==None):
+	if (args.archive==None) and (args.download==None) and (not args.add_feed) and (args.list==None) and (not args.log) and (not args.queue) and (args.search==None):
 		torrentcatcher(trconfig)
