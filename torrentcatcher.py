@@ -48,18 +48,34 @@ if __name__ == '__main__':
 	cur.execute('CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, name TEXT, url TEXT);')
 	con.commit()
 
-class Feeder():
+class Torrentcatcher():
 	def __init__(self, keys):
 		self.configfile = keys['config']
 		self.log = keys['log']
 		self.con = lite.connect(keys['database'])
 		self.cur = self.con.cursor()
+		
+	# Function to parse the config file and return the dictionary of values. Also creates a config file if one does not exist.
+	def configreader(self):
+		cfg = """[transmission]
+			hostname = string(default='localhost')
+			port = string(default='9091')
+			require_auth = boolean(default=False)
+			username = string(default='')
+			password = string(default='')
+			download_directory = string(default='')"""
+		spec = cfg.split("\n")
+		config = configobj(self.configfile, configspec=spec)
+		validator = validate.Validator()
+		config.validate(validator, copy=True)
+		config.filename = self.configfile
+		config.write()
+		return config
 				
 	# Function to write entries from the feed to the database
 	def write(self):
 		entries = []
 		count = {'arc' : 0, 'cache' : 0, 'write' : 0}
-		config = configobj(self.configfile)
 		self.cur.execute('SELECT * FROM feeds;')
 		feeds = self.cur.fetchall()
 		if feeds == []:
@@ -106,89 +122,44 @@ class Feeder():
 		print message
 		with open(self.log, 'a') as myfile:
 			myfile.write(str(datetime.now().strftime('[%a %m/%d/%y %H:%M:%S]')) + message + '\n')
-
-myFeeder = Feeder(keys)
-
-# Function to parse the config file and return the dictionary of values. Also creates a config file if one does not exist.
-def configreader():
-	configfile = keys['config']
-	cfg = """[transmission]
-		hostname = string(default='localhost')
-		port = string(default='9091')
-		require_auth = boolean(default=False)
-		username = string(default='')
-		password = string(default='')
-		download_directory = string(default='')"""
-	spec = cfg.split("\n")
-	config = configobj(configfile, configspec=spec)
-	validator = validate.Validator()
-	config.validate(validator, copy=True)
-	config.filename = configfile
-	config.write()
-	return config
-
-# Function to add files to Transmission over transmission-remote
-def transmission(title, url, trconfig):
-	host = trconfig['hostname']
-	port = trconfig['port']
-	auth = trconfig['require_auth']
-	authopt = trconfig['username'] + ':' + trconfig['password']
-	downdir = trconfig['download_directory']
-	myFeeder.logger('[TRANSMISSION] Starting download for ' + title)
-	if not auth:
-		command = 'transmission-remote ' + host + ':' + port + ' -a "' + url + '"'
-	else:
-		command = 'transmission-remote  ' + host + ':' + port + ' -n ' + authopt + ' -a "' + url + '"'
-	if downdir != '':
-		command = command + ' -w ' + downdir
-	transcmd = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	output,error = transcmd.communicate()
-	if error == "":
-		myFeeder.move(title)
-		myFeeder.logger('[TRANSMISSION] ' + output.strip('\n'))
-		return 0
-	else:
-		myFeeder.logger('[ERROR] ' + error.strip('\n'))
-		return 1
-
-# Add Feed utility. Takes the name and URL and appends it to the config file
-def addfeed():
-	name = raw_input('Enter name for feed: ')
-	url = raw_input('Enter URL for feed: ')
-	cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);', (name, url))
-	con.commit()
-	myFeeder.logger('[FEEDS] Feed "' + name + '" added successfully.')
-	
-# Parses out the log for the most recent run of torrentcatcher. Shows the entire log since the last time the command sans arguments ran.
-def logreader():
-	logcmd = "sed -n '/\[TORRENTCATCHER\]/=' " + keys['log']
-	logproc = subprocess.Popen(shlex.split(logcmd), stdout=subprocess.PIPE)
-	output = logproc.communicate()
-	lines = output[0].split('\n')
-	linelist = []
-	for each in lines:
-		if each != '':
-			linelist.append(int(each))
-	linelist.sort()
-	startline = lines[len(linelist)-1]
-	logproc = subprocess.Popen(shlex.split('tail -n +' + str(startline) + ' ' + keys['log']), stdout=subprocess.PIPE)
-	rawout = logproc.communicate()
-	output = rawout[0].split('\n')
-	for each in output:
-		if each != '':
-			print each
 			
-# Searches the database for a given query
-def torsearch(category):
-	query = raw_input('Enter query: ')
-	resultlist = []
-	if category == 'id':
-		try:
-			qtest = int(query)
-			cur.execute("SELECT * FROM torrents WHERE id LIKE ?", (query,))
-			results = cur.fetchall()
+	# Add Feed utility. Takes the name and URL and appends it to the config file
+	def addfeed(self):
+		name = raw_input('Enter name for feed: ')
+		url = raw_input('Enter URL for feed: ')
+		self.cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);', (name, url))
+		self.con.commit()
+		self.logger('[FEEDS] Feed "' + name + '" added successfully.')
+		
+	# Searches the database for a given query
+	def torsearch(self, category):
+		query = raw_input('Enter query: ')
+		resultlist = []
+		if category == 'id':
+			try:
+				qtest = int(query)
+				self.cur.execute("SELECT * FROM torrents WHERE id LIKE ?", (query,))
+				results = self.cur.fetchall()
+				if results == []:
+					print "No results found in '{0}' for '{1}".format(category, query)
+				else:
+					for each in results:
+						if each[4] == 0:
+							status = 'Queue'
+						elif each[4] == 1:
+							status = 'Archive'
+						resultlist.append([each[0], each[1], each[3], status])
+					print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
+			except:
+				print "Please enter a valid ID number for ID searches."
+		else:
+			if category == 'name':
+				self.cur.execute("SELECT * FROM torrents WHERE name LIKE ?;", ('%'+query+'%',))
+			elif category == 'source':
+				self.cur.execute("SELECT * FROM torrents WHERE source LIKE ?;", ('%'+query+'%',))
+			results = self.cur.fetchall()
 			if results == []:
-				print "No results found in '{0}' for '{1}".format(category, query)
+				print "No results found in '{0}' for '{1}'".format(category, query)
 			else:
 				for each in results:
 					if each[4] == 0:
@@ -197,128 +168,159 @@ def torsearch(category):
 						status = 'Archive'
 					resultlist.append([each[0], each[1], each[3], status])
 				print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
-		except:
-			print "Please enter a valid ID number for ID searches."
-	else:
-		lquery = '%' + query + '%'
-		cur.execute("SELECT * FROM torrents WHERE ? LIKE ?", (category, lquery))
-		results = cur.fetchall()
-		if results == []:
-			print "No results found in '{0}' for '{1}'".format(category, query)
-		else:
+				
+	# Function to list out given requests
+	def lister(self, cat):
+		resultlist = []
+		down = 0
+		status = ''
+		if cat == 'feeds':
+			self.cur.execute('SELECT * FROM feeds;')
+			feedlist = self.cur.fetchall()
+			if feedlist == []:
+				print 'No feeds were found!'
+				print "Use the '-f' or '--add-feed' option to add feeds."
+			else:
+				for each in feedlist:
+					resultlist.append([each[0], each[1], each[2]])
+				print tabulate(resultlist, ['ID', 'Name', 'URL'], tablefmt='pipe')
+		if cat == 'archive':
+			down = 1
+			status = 'Archive'
+		if cat == 'queue':
+			down = 0
+			status = 'Queue'
+		if (cat == 'archive') or (cat == 'queue'):
+			self.cur.execute('SELECT * FROM torrents WHERE downStatus=?;', (down,))
+			results = self.cur.fetchall()
 			for each in results:
-				if each[4] == 0:
-					status = 'Queue'
-				elif each[4] == 1:
-					status = 'Archive'
 				resultlist.append([each[0], each[1], each[3], status])
-			print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
+			print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'], tablefmt='pipe')
 			
-# Function to run the Archive only feature
-def archive(selID):
-	myFeeder.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
-	if selID == 'all':
-		cur.execute("SELECT * FROM torrents WHERE downStatus=0")
-		cachelist = cur.fetchall()
-		if cachelist == []:
-			myFeeder.logger('[ARCHIVE COMPLETE] No torrents to archive')
-		else: 
-			for each in cachelist:
-				myFeeder.move(each[1])
-			myFeeder.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
-	else:
-		for each in args.archive:
-			if each != 'all':
-				cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
-				selection = cur.fetchall()
-				seltor = selection[0]
-				if seltor[4] == 0:
-					myFeeder.move(seltor[1])
-				elif seltor[4] == 1:
-					myFeeder.logger('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
-		myFeeder.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
+	# Function to run the Archive only feature
+	def archive(self, selID):
+		self.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
+		if selID == 'all':
+			self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
+			cachelist = self.cur.fetchall()
+			if cachelist == []:
+				self.logger('[ARCHIVE COMPLETE] No torrents to archive')
+			else: 
+				for each in cachelist:
+					self.move(each[1])
+				self.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
+		else:
+			for each in args.archive:
+				if each != 'all':
+					self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
+					selection = self.cur.fetchall()
+					seltor = selection[0]
+					if seltor[4] == 0:
+						self.move(seltor[1])
+					elif seltor[4] == 1:
+						self.logger('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
+			self.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
+	
+	# Function to add files to Transmission over transmission-remote
+	def transmission(self, title, url):
+		config = self.configreader()
+		trconfig = config['transmission']
+		host = trconfig['hostname']
+		port = trconfig['port']
+		auth = trconfig['require_auth']
+		authopt = trconfig['username'] + ':' + trconfig['password']
+		downdir = trconfig['download_directory']
+		self.logger('[TRANSMISSION] Starting download for ' + title)
+		if not auth:
+			command = 'transmission-remote ' + host + ':' + port + ' -a "' + url + '"'
+		else:
+			command = 'transmission-remote  ' + host + ':' + port + ' -n ' + authopt + ' -a "' + url + '"'
+		if downdir != '':
+			command = command + ' -w ' + downdir
+		transcmd = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+		output,error = transcmd.communicate()
+		if error == "":
+			self.move(title)
+			self.logger('[TRANSMISSION] ' + output.strip('\n'))
+			return 0
+		else:
+			self.logger('[ERROR] ' + error.strip('\n'))
+			return 1
 		
-# Function to run the Download only feature
-def download(selID, trconfig):
-	myFeeder.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
-	if selID == 'all':
-		cur.execute("SELECT * FROM torrents WHERE downStatus=0")
-		cachelist = cur.fetchall()
+	# Parses out the log for the most recent run of torrentcatcher. Shows the entire log since the last time the command sans arguments ran.
+	def logreader(self):
+		logcmd = "sed -n '/\[TORRENTCATCHER\]/=' " + self.log
+		logproc = subprocess.Popen(shlex.split(logcmd), stdout=subprocess.PIPE)
+		output = logproc.communicate()
+		lines = output[0].split('\n')
+		linelist = []
+		for each in lines:
+			if each != '':
+				linelist.append(int(each))
+		linelist.sort()
+		startline = lines[len(linelist)-1]
+		logproc = subprocess.Popen(shlex.split('tail -n +' + str(startline) + ' ' + self.log), stdout=subprocess.PIPE)
+		rawout = logproc.communicate()
+		output = rawout[0].split('\n')
+		for each in output:
+			if each != '':
+				print each
+	
+	# Function to run the Download only feature
+	def download(self, selID):
+		config = self.configreader()
+		trconfig = config['transmission']
+		self.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
+		if selID == 'all':
+			self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
+			cachelist = cur.fetchall()
+			if cachelist == []:
+				self.logger('[DOWNLOAD COMPLETE] No torrents to download')
+			else:
+				errors = 0
+				for each in cachelist:
+					test = self.transmission(each[1], each[2])
+					errors += test
+				if errors > 0:
+					self.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
+				else:
+					self.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
+		else:
+			errors = 0
+			for each in selID:
+				if each != 'all':
+					self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
+					selection = self.cur.fetchall()
+					seltor = selction[0]
+					test = self.transmission(seltor[1], seltor[2])
+					errors +=test
+			if errors > 0:
+				self.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
+			else:
+				self.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')	
+				
+	# The full automatic torrentcatcher
+	def torrentcatcher(self):
+		config = self.configreader()
+		trconfig = config['transmission']
+		self.logger('[TORRENTCATCHER] Starting Torrentcatcher')
+		self.write()
+		self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
+		cachelist = self.cur.fetchall()
 		if cachelist == []:
-			myFeeder.logger('[DOWNLOAD COMPLETE] No torrents to download')
+			self.logger('[TORRENTCATCHER COMPLETE] No torrents to download')
 		else:
 			errors = 0
 			for each in cachelist:
-				test = transmission(each[1], each[2], trconfig)
+				test = self.transmission(each[1], each[2])
 				errors += test
 			if errors > 0:
-				myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
+				self.logger('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
 			else:
-				myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
-	else:
-		errors = 0
-		for each in args.archive:
-			if each != 'all':
-				cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
-				selection = cur.fetchall()
-				seltor = selction[0]
-				test = transmission(seltor[1], seltor[2], trconfig)
-				errors +=test
-		if errors > 0:
-			myFeeder.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
-		else:
-			myFeeder.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')	
-			
-# The full automatic torrentcatcher
-def torrentcatcher(trconfig):
-	myFeeder.logger('[TORRENTCATCHER] Starting Torrentcatcher')
-	myFeeder.write()
-	cur.execute("SELECT * FROM torrents WHERE downStatus=0")
-	cachelist = cur.fetchall()
-	if cachelist == []:
-		myFeeder.logger('[TORRENTCATCHER COMPLETE] No torrents to download')
-	else:
-		errors = 0
-		for each in cachelist:
-			test = transmission(each[1], each[2], trconfig)
-			errors += test
-		if errors > 0:
-			myFeeder.logger('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
-		else:
-			myFeeder.logger('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')
-		
-# Function to list out given requests
-def lister(cat):
-	resultlist = []
-	down = 0
-	status = ''
-	if cat == 'feeds':
-		cur.execute('SELECT * FROM feeds;')
-		feedlist = cur.fetchall()
-		if feedlist == []:
-			print 'No feeds were found!'
-			print "Use the '-f' or '--add-feed' option to add feeds."
-		else:
-			for each in feedlist:
-				resultlist.append([each[0], each[1], each[2]])
-			print tabulate(resultlist, ['ID', 'Name', 'URL'], tablefmt='pipe')
-	if cat == 'archive':
-		down = 1
-		status = 'Archive'
-	if cat == 'queue':
-		down = 0
-		status = 'Queue'
-	if (cat == 'archive') or (cat == 'queue'):
-		cur.execute('SELECT * FROM torrents WHERE downStatus=?;', (down,))
-		results = cur.fetchall()
-		for each in results:
-			resultlist.append([each[0], each[1], each[3], status])
-		print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'], tablefmt='pipe')
-		
-	
+				self.logger('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')
+
 if __name__ == '__main__':
-	config = configreader()
-	trconfig = config['transmission']
+	myData = Torrentcatcher(keys)
 	# Parsing out arguments for command line input
 	parser = argparse.ArgumentParser(prog='torrentcatcher')
 	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
@@ -332,19 +334,19 @@ if __name__ == '__main__':
 	args = parser.parse_args()
 	# Interprets arguments to their respective functions
 	if args.archive != None:
-		archive(args.archive[0])
+		myData.archive(args.archive[0])
 	if args.download != None:
-		download(args.download[0], trconfig)
+		myData.download(args.download[0])
 	if args.add_feed:
-		addfeed()
+		myData.addfeed()
 	if args.list != None:
-		lister(args.list[0])
+		myData.lister(args.list[0])
 	if args.log:
-		logreader()
+		myData.logreader()
 	if args.queue:
-		myFeeder.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
-		myFeeder.write()
+		myData.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
+		myData.write()
 	if args.search != None:
-		torsearch(args.search[0])
+		myData.torsearch(args.search[0])
 	if (args.archive==None) and (args.download==None) and (not args.add_feed) and (args.list==None) and (not args.log) and (not args.queue) and (args.search==None):
-		torrentcatcher(trconfig)
+		myData.torrentcatcher()
