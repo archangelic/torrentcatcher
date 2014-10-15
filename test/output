@@ -1,6 +1,0 @@
-hostname = localhost
-port = 9091
-require_auth = False
-username = ""
-password = ""
-download_directory = ""
