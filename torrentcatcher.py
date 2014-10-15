@@ -35,7 +35,7 @@ class Torrentcatcher():
 		self.cur.execute('CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);')
 		self.cur.execute('CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, name TEXT, url TEXT);')
 		self.con.commit()
-		
+
 	# Function to parse the config file and return the dictionary of values. Also creates a config file if one does not exist.
 	def configreader(self):
 		cfg = """hostname = string(default='localhost')
@@ -51,9 +51,13 @@ class Torrentcatcher():
 		config.filename = self.configfile
 		config.write()
 		return config
-				
+	
+	def write(self, name, url, source):
+		self.cur.execute("INSERT INTO torrents(name, url, source, downStatus) VALUES (?, ?, ?, 0);", (name, url, source))
+		self.con.commit()
+
 	# Function to write entries from the feed to the database
-	def write(self):
+	def feeder(self):
 		entries = []
 		count = {'arc' : 0, 'cache' : 0, 'write' : 0}
 		self.cur.execute('SELECT * FROM feeds;')
@@ -72,7 +76,7 @@ class Torrentcatcher():
 				self.cur.execute("SELECT EXISTS(SELECT * FROM torrents WHERE name=?);", (title,))
 				test = self.cur.fetchall()
 				if test[0][0] != 1:
-					self.cur.execute("INSERT INTO torrents(name, url, source, downStatus) VALUES (?, ?, ?, 0);", (title, link, feedname))
+					self.write(title, link, feedname)
 					count['write'] += 1
 					self.logger('[QUEUED] ' + title + ' was added to queue')
 				else:
@@ -82,7 +86,6 @@ class Torrentcatcher():
 						count['arc'] += 1
 					elif status[0][4] == 0:
 						count['cache'] += 1
-				self.con.commit()
 		total = count['arc'] + count['cache'] + count['write']
 		if total != 0:
 			self.logger('[QUEUE COMPLETE] New Torrents: ' + str(count['write']))
@@ -90,30 +93,27 @@ class Torrentcatcher():
 			self.logger('[QUEUE COMPLETE] Already Archived: ' + str(count['arc']))
 		else:
 			self.logger('[ERROR] No feed information found. Something is probably wrong.')
-					
+
 	# Function updates given entries to show they have been sent to the Archive
 	def move(self, title):
 		self.cur.execute("UPDATE torrents SET downStatus=1 WHERE name=?", (title,))
 		self.con.commit()
 		self.logger('[ARCHIVED] ' + title + ' was moved to archive.')
-			
+
 	# Homebrewed logging solution. Any passed messages are outputted to the console as well as appended to the log
 	def logger(self, message):
 		print message
 		with open(self.log, 'a') as myfile:
 			myfile.write(str(datetime.now().strftime('[%a %m/%d/%y %H:%M:%S]')) + message + '\n')
-			
+
 	# Add Feed utility. Takes the name and URL and appends it to the config file
-	def addfeed(self):
-		name = raw_input('Enter name for feed: ')
-		url = raw_input('Enter URL for feed: ')
+	def addfeed(self, name, url):
 		self.cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);', (name, url))
 		self.con.commit()
 		self.logger('[FEEDS] Feed "' + name + '" added successfully.')
-		
+
 	# Searches the database for a given query
-	def torsearch(self, category):
-		query = raw_input('Enter query: ')
+	def torsearch(self, category, query):
 		resultlist = []
 		if category == 'id':
 			try:
@@ -148,7 +148,7 @@ class Torrentcatcher():
 						status = 'Archive'
 					resultlist.append([each[0], each[1], each[3], status])
 				print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
-				
+
 	# Function to list out given requests
 	def lister(self, cat):
 		resultlist = []
@@ -176,7 +176,7 @@ class Torrentcatcher():
 			for each in results:
 				resultlist.append([each[0], each[1], each[3], status])
 			print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'], tablefmt='pipe')
-			
+
 	# Function to run the Archive only feature
 	def archive(self, selID):
 		self.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
@@ -200,7 +200,7 @@ class Torrentcatcher():
 					elif seltor[4] == 1:
 						self.logger('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
 			self.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
-	
+
 	# Function to add files to Transmission over transmission-remote
 	def transmission(self, title, url):
 		config = self.configreader()
@@ -225,7 +225,7 @@ class Torrentcatcher():
 		else:
 			self.logger('[ERROR] ' + error.strip('\n'))
 			return 1
-		
+
 	# Parses out the log for the most recent run of torrentcatcher. Shows the entire log since the last time the command sans arguments ran.
 	def logreader(self):
 		logcmd = "sed -n '/\[TORRENTCATCHER\]/=' " + self.log
@@ -275,11 +275,11 @@ class Torrentcatcher():
 				self.logger('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
 			else:
 				self.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')	
-				
+
 	# The full automatic torrentcatcher
 	def torrentcatcher(self):
 		self.logger('[TORRENTCATCHER] Starting Torrentcatcher')
-		self.write()
+		self.feeder()
 		self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
 		cachelist = self.cur.fetchall()
 		if cachelist == []:
@@ -329,7 +329,9 @@ if __name__ == '__main__':
 	if args.download != None:
 		myData.download(args.download[0])
 	if args.add_feed:
-		myData.addfeed()
+		name = raw_input('Enter name for feed: ')
+		url = raw_input('Enter URL for feed: ')
+		myData.addfeed(name, url)
 	if args.list != None:
 		myData.lister(args.list[0])
 	if args.log:
@@ -338,6 +340,7 @@ if __name__ == '__main__':
 		myData.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
 		myData.write()
 	if args.search != None:
-		myData.torsearch(args.search[0])
+		query = raw_input('Enter query: ')
+		myData.torsearch(args.search[0], query)
 	if (args.archive==None) and (args.download==None) and (not args.add_feed) and (args.list==None) and (not args.log) and (not args.queue) and (args.search==None):
 		myData.torrentcatcher()
