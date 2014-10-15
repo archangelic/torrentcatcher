@@ -294,6 +294,21 @@ class Torrentcatcher():
 			else:
 				self.logger('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')
 
+# Function to check if file location is writeable. Only creates up to one subdirectory. Will error otherwise.
+def filecheck(filepath):
+	x = path.abspath(filepath)
+	xpath = path.dirname(x)
+	if not path.isdir(xpath):
+		try:
+			mkdir(filepath)
+			return xpath
+		except OSError,e:
+			print '[OSError]', e
+			quit()
+		except IOError,e:
+			print '[IOError]', e
+			quit()
+
 if __name__ == '__main__':
 	# Finds the location of torrentcatcher
 	appPath = path.dirname(path.abspath(__file__))
@@ -306,23 +321,33 @@ if __name__ == '__main__':
 		'config' : path.join(dataPath, 'trconfig'),
 		'database' : path.join(dataPath, 'torcatch.db')}
 	# Creates data directory for config file, database, and log file
-	if path.isdir(dataPath) == False:
+	if not path.isdir(dataPath):
 		mkdir(dataPath)
+	# Parsing out arguments for command line input
+	parser = argparse.ArgumentParser(prog='torrentcatcher')
+	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
+	parser.add_argument('-C', nargs=1, metavar='<path to trconfig file>', help="Overrides default config file location. If the config file does not exist at given location, the file will be created there.")
+	parser.add_argument('-d', '--download', nargs='+', metavar='all|ID', help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
+	parser.add_argument('-D', nargs=1, metavar='<path to database>', help="Overrides default database location. If the database file does not exist at given location, it will be created there.")
+	parser.add_argument('-f', '--add-feed', help="Starts the add feed utility.", action="store_true")
+	parser.add_argument('-l', '--list', nargs=1, choices=['queue', 'archive', 'feeds'], help="Lists all items for given category.")
+	parser.add_argument('-L', nargs=1, metavar='<path to log file>', help="Choose location for log output.")
+	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
+	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
+	parser.add_argument('--showlog', help="Shows log from most recent full run.", action="store_true")
+	parser.add_argument('--version', action='version', version='%(prog)s 1.0.2')
+	args = parser.parse_args()
+	# Check for custom data file locations
+	if args.C != None:
+		keys['config'] = filecheck(args.C[0])
+	if args.D != None:
+		keys['database'] = filecheck(args.D[0])
+	if args.L != None:
+		keys['log'] = filecheck(args.L[0])
 	# Initialize Torrentcatcher class
 	myData = Torrentcatcher(keys)
 	# Create the configuration file if it does not exist
 	myData.configreader()
-	# Parsing out arguments for command line input
-	parser = argparse.ArgumentParser(prog='torrentcatcher')
-	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
-	parser.add_argument('-d', '--download', nargs='+', metavar='all|ID', help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
-	parser.add_argument('-f', '--add-feed', help="Starts the add feed utility.", action="store_true")
-	parser.add_argument('-l', '--list', nargs=1, choices=['queue', 'archive', 'feeds'], help="Lists all items for given category.")
-	parser.add_argument('-L', '--log', help="Shows log from most recent full run.", action="store_true")
-	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
-	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
-	parser.add_argument('--version', action='version', version='%(prog)s 1.0.2')
-	args = parser.parse_args()
 	# Interprets arguments to their respective functions
 	if args.archive != None:
 		myData.archive(args.archive[0])
@@ -334,7 +359,7 @@ if __name__ == '__main__':
 		myData.addfeed(name, url)
 	if args.list != None:
 		myData.lister(args.list[0])
-	if args.log:
+	if args.showlog:
 		myData.logreader()
 	if args.queue:
 		myData.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
@@ -342,5 +367,5 @@ if __name__ == '__main__':
 	if args.search != None:
 		query = raw_input('Enter query: ')
 		myData.torsearch(args.search[0], query)
-	if (args.archive==None) and (args.download==None) and (not args.add_feed) and (args.list==None) and (not args.log) and (not args.queue) and (args.search==None):
+	if (args.archive==None) and (args.download==None) and (not args.add_feed) and (args.list==None) and (not args.showlog) and (not args.queue) and (args.search==None):
 		myData.torrentcatcher()
