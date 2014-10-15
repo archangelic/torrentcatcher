@@ -25,40 +25,20 @@ from feedparser import parse
 from os import path, mkdir
 from tabulate import tabulate
 
-# Finds the location of torrentcatcher
-appPath = path.dirname(path.abspath(__file__))
-if appPath == '':
-	appPath = "."
-dataPath = path.join(appPath, 'data')
-	
-# Dictionary of values several functions use
-keys = {
-	'log' : path.join(dataPath, 'torrentcatcher.log'),
-	'config' : path.join(dataPath, 'config'),
-	'database' : path.join(dataPath, 'torcatch.db')}
-
-if __name__ == '__main__':
-	# Creates data directory for config file, database, and log file
-	if path.isdir(dataPath) == False:
-		mkdir(dataPath)
-	# Creates database if it does not exist:
-	con = lite.connect(keys['database'])
-	cur = con.cursor()
-	cur.execute('CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);')
-	cur.execute('CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, name TEXT, url TEXT);')
-	con.commit()
-
 class Torrentcatcher():
 	def __init__(self, keys):
 		self.configfile = keys['config']
 		self.log = keys['log']
+		# Creates database if it does not exist
 		self.con = lite.connect(keys['database'])
 		self.cur = self.con.cursor()
+		self.cur.execute('CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);')
+		self.cur.execute('CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, name TEXT, url TEXT);')
+		self.con.commit()
 		
 	# Function to parse the config file and return the dictionary of values. Also creates a config file if one does not exist.
 	def configreader(self):
-		cfg = """[transmission]
-			hostname = string(default='localhost')
+		cfg = """hostname = string(default='localhost')
 			port = string(default='9091')
 			require_auth = boolean(default=False)
 			username = string(default='')
@@ -79,7 +59,7 @@ class Torrentcatcher():
 		self.cur.execute('SELECT * FROM feeds;')
 		feeds = self.cur.fetchall()
 		if feeds == []:
-			self.logger("[ERROR] No feeds found in feeds file! Use '-f' or '--add-feed' options to add torrent feeds")
+			self.logger("[ERROR] No feeds found! Use '-f' or '--add-feed' options to add torrent feeds")
 			return 0
 		for i in feeds:
 			self.logger('[FEEDS] Reading entries for feed "' + i[1] + '"')
@@ -224,12 +204,11 @@ class Torrentcatcher():
 	# Function to add files to Transmission over transmission-remote
 	def transmission(self, title, url):
 		config = self.configreader()
-		trconfig = config['transmission']
-		host = trconfig['hostname']
-		port = trconfig['port']
-		auth = trconfig['require_auth']
-		authopt = trconfig['username'] + ':' + trconfig['password']
-		downdir = trconfig['download_directory']
+		host = config['hostname']
+		port = config['port']
+		auth = config['require_auth']
+		authopt = config['username'] + ':' + config['password']
+		downdir = config['download_directory']
 		self.logger('[TRANSMISSION] Starting download for ' + title)
 		if not auth:
 			command = 'transmission-remote ' + host + ':' + port + ' -a "' + url + '"'
@@ -268,8 +247,6 @@ class Torrentcatcher():
 	
 	# Function to run the Download only feature
 	def download(self, selID):
-		config = self.configreader()
-		trconfig = config['transmission']
 		self.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
 		if selID == 'all':
 			self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
@@ -301,8 +278,6 @@ class Torrentcatcher():
 				
 	# The full automatic torrentcatcher
 	def torrentcatcher(self):
-		config = self.configreader()
-		trconfig = config['transmission']
 		self.logger('[TORRENTCATCHER] Starting Torrentcatcher')
 		self.write()
 		self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
@@ -320,7 +295,23 @@ class Torrentcatcher():
 				self.logger('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')
 
 if __name__ == '__main__':
+	# Finds the location of torrentcatcher
+	appPath = path.dirname(path.abspath(__file__))
+	if appPath == '':
+		appPath = "."
+	dataPath = path.join(appPath, 'data')
+	# Dictionary of values for Torrentcatcher class
+	keys = {
+		'log' : path.join(dataPath, 'torrentcatcher.log'),
+		'config' : path.join(dataPath, 'trconfig'),
+		'database' : path.join(dataPath, 'torcatch.db')}
+	# Creates data directory for config file, database, and log file
+	if path.isdir(dataPath) == False:
+		mkdir(dataPath)
+	# Initialize Torrentcatcher class
 	myData = Torrentcatcher(keys)
+	# Create the configuration file if it does not exist
+	myData.configreader()
 	# Parsing out arguments for command line input
 	parser = argparse.ArgumentParser(prog='torrentcatcher')
 	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
