@@ -29,6 +29,7 @@ class Torrentcatcher():
 	def __init__(self, keys):
 		self.configfile = keys['config']
 		self.log = keys['log']
+		self.quiet = keys['quiet']
 		# Creates database if it does not exist
 		self.con = lite.connect(keys['database'])
 		self.cur = self.con.cursor()
@@ -102,7 +103,8 @@ class Torrentcatcher():
 
 	# Homebrewed logging solution. Any passed messages are outputted to the console as well as appended to the log
 	def logger(self, message):
-		print message
+		if not self.quiet:
+			print message
 		with open(self.log, 'a') as myfile:
 			myfile.write(str(datetime.now().strftime('[%a %m/%d/%y %H:%M:%S]')) + message + '\n')
 
@@ -333,6 +335,7 @@ if __name__ == '__main__':
 	parser.add_argument('-l', '--list', nargs=1, choices=['queue', 'archive', 'feeds'], help="Lists all items for given category.")
 	parser.add_argument('-L', nargs=1, metavar='<path to log file>', help="Choose location for log output.")
 	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
+	parser.add_argument('-Q', '--quiet', help="Suppresses output.", action="store_true")
 	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
 	parser.add_argument('--showlog', help="Shows log from most recent full run.", action="store_true")
 	parser.add_argument('--version', action='version', version='%(prog)s 1.1.0')
@@ -344,6 +347,8 @@ if __name__ == '__main__':
 		keys['database'] = filecheck(args.D[0])
 	if args.L != None:
 		keys['log'] = filecheck(args.L[0])
+	# Turns quiet mode off and on
+	keys['quiet'] = args.quiet
 	# Initialize Torrentcatcher class
 	myData = Torrentcatcher(keys)
 	# Create the configuration file if it does not exist
