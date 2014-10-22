@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 ###########################################################################
 # torrentcatcher v1.0.1
 #     Copyright (C) 2014  Michael Hancock
