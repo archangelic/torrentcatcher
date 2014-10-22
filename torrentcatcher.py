@@ -252,7 +252,7 @@ class Torrentcatcher():
 		self.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
 		if selID == 'all':
 			self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
-			cachelist = cur.fetchall()
+			cachelist = self.cur.fetchall()
 			if cachelist == []:
 				self.logger('[DOWNLOAD COMPLETE] No torrents to download')
 			else:
@@ -368,7 +368,7 @@ if __name__ == '__main__':
 		myData.logreader()
 	if args.queue:
 		myData.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
-		myData.write()
+		myData.feeder()
 	if args.search != None:
 		query = raw_input('Enter query: ')
 		myData.torsearch(args.search[0], query)
