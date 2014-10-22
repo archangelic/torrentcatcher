@@ -270,7 +270,7 @@ class Torrentcatcher():
 				if each != 'all':
 					self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
 					selection = self.cur.fetchall()
-					seltor = selction[0]
+					seltor = selection[0]
 					test = self.transmission(seltor[1], seltor[2])
 					errors +=test
 			if errors > 0:
