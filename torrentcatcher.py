@@ -338,7 +338,7 @@ if __name__ == '__main__':
 	parser.add_argument('-Q', '--quiet', help="Suppresses output.", action="store_true")
 	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
 	parser.add_argument('--showlog', help="Shows log from most recent full run.", action="store_true")
-	parser.add_argument('--version', action='version', version='%(prog)s 1.1.0')
+	parser.add_argument('--version', action='version', version='%(prog)s 1.1.1')
 	args = parser.parse_args()
 	# Check for custom data file locations
 	if args.C != None:
