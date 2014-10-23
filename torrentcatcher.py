@@ -370,5 +370,5 @@ if __name__ == '__main__':
 	if args.search != None:
 		query = raw_input('Enter query: ')
 		myData.torsearch(args.search[0], query)
-	if (args.archive==None) and (args.download==None) and (not args.add_feed) and (args.list==None) and (not args.showlog) and (not args.queue) and (args.search==None):
+	if (args.archive==None) and (args.download==None) and (args.add_feed==None) and (args.list==None) and (not args.showlog) and (not args.queue) and (args.search==None):
 		myData.torrentcatcher()
