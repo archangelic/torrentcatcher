@@ -182,7 +182,7 @@ class Torrentcatcher():
 	# Function to run the Archive only feature
 	def archive(self, selID):
 		self.logger('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
-		if selID == 'all':
+		if selID[0] == 'all':
 			self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
 			cachelist = self.cur.fetchall()
 			if cachelist == []:
@@ -192,15 +192,25 @@ class Torrentcatcher():
 					self.move(each[1])
 				self.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
 		else:
-			for each in args.archive:
+			ids = []
+			for each in selID:
 				if each != 'all':
+					try:
+						int(each)
+						ids.append(each)
+					except:
+						print "'%s' is not a valid ID." % (each)
+			for each in ids:
 					self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
 					selection = self.cur.fetchall()
-					seltor = selection[0]
-					if seltor[4] == 0:
-						self.move(seltor[1])
-					elif seltor[4] == 1:
-						self.logger('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
+					if selection == []:
+						self.logger(("[ERROR] ID '%s' does not exist") % (each))
+					else:
+						seltor = selection[0]
+						if seltor[4] == 0:
+							self.move(seltor[1])
+						elif seltor[4] == 1:
+							self.logger('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
 			self.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
 
 	# Function to add files to Transmission over transmission-remote
@@ -250,7 +260,7 @@ class Torrentcatcher():
 	# Function to run the Download only feature
 	def download(self, selID):
 		self.logger('[DOWNLOAD ONLY] Starting download of already queued torrents')
-		if selID == 'all':
+		if selID[0] == 'all':
 			self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
 			cachelist = self.cur.fetchall()
 			if cachelist == []:
@@ -266,10 +276,20 @@ class Torrentcatcher():
 					self.logger('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
 		else:
 			errors = 0
+			ids = []
 			for each in selID:
 				if each != 'all':
-					self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
-					selection = self.cur.fetchall()
+					try:
+						int(each)
+						ids.append(each)
+					except:
+						print "'%s' is not a valid ID." % (each)
+			for each in ids:
+				self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
+				selection = self.cur.fetchall()
+				if selection == []:
+					self.logger(("[ERROR] ID '%s' does not exist") % (each))
+				else:
 					seltor = selection[0]
 					test = self.transmission(seltor[1], seltor[2])
 					errors +=test
@@ -355,9 +375,9 @@ if __name__ == '__main__':
 	myData.configreader()
 	# Interprets arguments to their respective functions
 	if args.archive != None:
-		myData.archive(args.archive[0])
+		myData.archive(args.archive)
 	if args.download != None:
-		myData.download(args.download[0])
+		myData.download(args.download)
 	if args.add_feed != None:
 		myData.addfeed(args.add_feed[0], args.add_feed[1])
 	if args.list != None:
