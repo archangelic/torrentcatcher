@@ -327,11 +327,11 @@ if __name__ == '__main__':
 		mkdir(dataPath)
 	# Parsing out arguments for command line input
 	parser = argparse.ArgumentParser(prog='torrentcatcher')
-	parser.add_argument('-a', '--archive', nargs='+', metavar='all|ID', help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
+	parser.add_argument('-a', '--archive', nargs='+', metavar=('all', 'ID'), help="Moves selected torrents to the archive. Using the argument 'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
 	parser.add_argument('-C', nargs=1, metavar='<path to trconfig file>', help="Overrides default config file location. If the config file does not exist at given location, the file will be created there.")
-	parser.add_argument('-d', '--download', nargs='+', metavar='all|ID', help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
+	parser.add_argument('-d', '--download', nargs='+', metavar=('all', 'ID'), help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
 	parser.add_argument('-D', nargs=1, metavar='<path to database>', help="Overrides default database location. If the database file does not exist at given location, it will be created there.")
-	parser.add_argument('-f', '--add-feed', help="Starts the add feed utility.", action="store_true")
+	parser.add_argument('-f', '--add-feed', nargs=2, metavar=('<name>', '<url>'), help="Adds given feed to the database.")
 	parser.add_argument('-l', '--list', nargs=1, choices=['queue', 'archive', 'feeds'], help="Lists all items for given category.")
 	parser.add_argument('-L', nargs=1, metavar='<path to log file>', help="Choose location for log output.")
 	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
@@ -358,10 +358,8 @@ if __name__ == '__main__':
 		myData.archive(args.archive[0])
 	if args.download != None:
 		myData.download(args.download[0])
-	if args.add_feed:
-		name = raw_input('Enter name for feed: ')
-		url = raw_input('Enter URL for feed: ')
-		myData.addfeed(name, url)
+	if args.add_feed != None:
+		myData.addfeed(args.add_feed[0], args.add_feed[1])
 	if args.list != None:
 		myData.lister(args.list[0])
 	if args.showlog:
