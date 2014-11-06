@@ -374,21 +374,29 @@ if __name__ == '__main__':
 	# Create the configuration file if it does not exist
 	myData.configreader()
 	# Interprets arguments to their respective functions
+	argument = False
 	if args.archive != None:
+		argument = True
 		myData.archive(args.archive)
 	if args.download != None:
+		argument = True
 		myData.download(args.download)
 	if args.add_feed != None:
+		argument = True
 		myData.addfeed(args.add_feed[0], args.add_feed[1])
 	if args.list != None:
+		argument = True
 		myData.lister(args.list[0])
 	if args.showlog:
+		argument = True
 		myData.logreader()
 	if args.queue:
+		argument = True
 		myData.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
 		myData.feeder()
 	if args.search != None:
+		argument = True
 		query = raw_input('Enter query: ')
 		myData.torsearch(args.search[0], query)
-	if (args.archive==None) and (args.download==None) and (args.add_feed==None) and (args.list==None) and (not args.showlog) and (not args.queue) and (args.search==None):
+	if not argument:
 		myData.torrentcatcher()
