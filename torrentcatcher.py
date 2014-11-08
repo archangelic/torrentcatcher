@@ -89,9 +89,9 @@ class Torrentcatcher():
 						count['cache'] += 1
 		total = count['arc'] + count['cache'] + count['write']
 		if total != 0:
-			self.logger('[QUEUE COMPLETE] New Torrents: ' + str(count['write']))
-			self.logger('[QUEUE COMPLETE] Already Queued: ' + str(count['cache']))
-			self.logger('[QUEUE COMPLETE] Already Archived: ' + str(count['arc']))
+			self.logger('[FEED COMPLETE] New Torrents: ' + str(count['write']))
+			self.logger('[FEED COMPLETE] Already Queued: ' + str(count['cache']))
+			self.logger('[FEED COMPLETE] Already Archived: ' + str(count['arc']))
 		else:
 			self.logger('[ERROR] No feed information found. Something is probably wrong.')
 
@@ -212,6 +212,44 @@ class Torrentcatcher():
 						elif seltor[4] == 1:
 							self.logger('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
 			self.logger('[ARCHIVE COMPLETE] Archive process completed successfully')
+
+	#Function to add items to the queue from the archive
+	def queue(self, selID):
+		self.logger('[QUEUE ONLY] Moving selected torrents in the archive to the queue')
+		if selID[0] == 'all':
+			self.cur.execute("SELECT * FROM torrents WHERE downStatus=1")
+			cachelist = self.cur.fetchall()
+			if cachelist == []:
+				self.logger('[QUEUE COMPLETE] No torrents to queue')
+			else: 
+				for each in cachelist:
+					self.cur.execute("UPDATE torrents SET downStatus=0 WHERE name=?", (each[1],))
+					self.con.commit()
+					self.logger('[QUEUED] ' + each[1] + ' was moved to the queue.')
+				self.logger('[QUEUE COMPLETE] Archive process completed successfully')
+		else:
+			ids = []
+			for each in selID:
+				if each != 'all':
+					try:
+						int(each)
+						ids.append(each)
+					except:
+						print "'%s' is not a valid ID." % (each)
+			for each in ids:
+					self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
+					selection = self.cur.fetchall()
+					if selection == []:
+						self.logger(("[ERROR] ID '%s' does not exist") % (each))
+					else:
+						seltor = selection[0]
+						if seltor[4] == 1:
+							self.cur.execute("UPDATE torrents SET downStatus=0 WHERE name=?", (seltor[1],))
+							self.con.commit()
+							self.logger('[QUEUED] ' + seltor[1] + ' was moved to the queue.')
+						elif seltor[4] == 0:
+							self.logger('[QUEUE] %s is already in the queue.' % (seltor[1]))
+			self.logger('[QUEUE COMPLETE] Queue process completed successfully')
 
 	# Function to add files to Transmission over transmission-remote
 	def transmission(self, title, url):
@@ -352,9 +390,10 @@ if __name__ == '__main__':
 	parser.add_argument('-d', '--download', nargs='+', metavar=('all', 'ID'), help="Moves selected torrents to Transmission.Using the argument 'all' will move all currently queued torrents to Transmission. Use the '--list' option to see IDs.")
 	parser.add_argument('-D', nargs=1, metavar='<path to database>', help="Overrides default database location. If the database file does not exist at given location, it will be created there.")
 	parser.add_argument('-f', '--add-feed', nargs=2, metavar=('<name>', '<url>'), help="Adds given feed to the database.")
+	parser.add_argument('-F', '--feed', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
 	parser.add_argument('-l', '--list', nargs=1, choices=['queue', 'archive', 'feeds'], help="Lists all items for given category.")
 	parser.add_argument('-L', nargs=1, metavar='<path to log file>', help="Choose location for log output.")
-	parser.add_argument('-q', '--queue', help="Checks all feeds for new torrents to add to the queue. DOES NOT SEND TO TRANSMISSION.", action="store_true")
+	parser.add_argument('-q', '--queue', nargs='+', metavar=('all', 'ID'), help="Moves selected torrents to the queue. Using the argument 'all' will move all currently archived torrents to the queue. Use the '--list' option to see IDs.")
 	parser.add_argument('-Q', '--quiet', help="Suppresses output.", action="store_true")
 	parser.add_argument('--search', nargs=1, choices=['name', 'source', 'id'], help="Searches archive and queue for given query. Can search by name, source, or ID number.")
 	parser.add_argument('--showlog', help="Shows log from most recent full run.", action="store_true")
@@ -384,16 +423,19 @@ if __name__ == '__main__':
 	if args.add_feed != None:
 		argument = True
 		myData.addfeed(args.add_feed[0], args.add_feed[1])
+	if args.feed:
+		argument = True
+		myData.logger('[FEED ONLY] Checking feeds for new torrents to queue')
+		myData.feeder()
 	if args.list != None:
 		argument = True
 		myData.lister(args.list[0])
+	if args.queue != None:
+		argument = True
+		myData.queue(args.queue)
 	if args.showlog:
 		argument = True
 		myData.logreader()
-	if args.queue:
-		argument = True
-		myData.logger('[QUEUE ONLY] Checking feeds for new torrents to queue')
-		myData.feeder()
 	if args.search != None:
 		argument = True
 		query = raw_input('Enter query: ')
