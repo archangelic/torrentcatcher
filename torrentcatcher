@@ -17,7 +17,7 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###########################################################################
 
-import argparse, shlex, subprocess, sys, validate
+import argparse, shlex, subprocess, sys, validate, os
 import sqlite3 as lite
 from configobj import ConfigObj as configobj
 from datetime import datetime
@@ -371,10 +371,8 @@ def filecheck(filepath):
 
 if __name__ == '__main__':
 	# Finds the location of torrentcatcher
-	appPath = path.dirname(path.abspath(__file__))
-	if appPath == '':
-		appPath = "."
-	dataPath = path.join(appPath, 'data')
+	homeFolder = os.environ['HOME']
+	dataPath = path.join(homeFolder, '.torrentcatcher')
 	# Dictionary of values for Torrentcatcher class
 	keys = {
 		'log' : path.join(dataPath, 'torrentcatcher.log'),
