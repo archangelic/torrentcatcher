@@ -30,6 +30,7 @@ from datetime import datetime
 from feedparser import parse
 from tabulate import tabulate
 
+
 class TorrentCatcher():
     def __init__(self, trconf, trlog, trdb, trquiet=False):
         self.configfile = trconf
@@ -69,7 +70,7 @@ class TorrentCatcher():
             self.logger.addHandler(out)
         self.logger.debug("Logging started")
 
-    # Function to parse the config file and return the dictionary of values. 
+    # Function to parse the config file and return the dictionary of values.
     # Also creates a config file if one does not exist.
     def configreader(self):
         cfg = """hostname = string(default='localhost')
@@ -88,7 +89,8 @@ class TorrentCatcher():
 
     def write(self, name, url, source):
         self.cur.execute(
-            "INSERT INTO torrents(name, url, source, downStatus) VALUES (?, ?, ?, 0);",
+            ("INSERT INTO torrents(name, url, source, downStatus) "
+             "VALUES (?, ?, ?, 0);"),
             (name, url, source)
         )
         self.con.commit()
@@ -96,7 +98,7 @@ class TorrentCatcher():
     # Function to write entries from the feed to the database
     def feeder(self):
         entries = []
-        count = {'arc' : 0, 'cache' : 0, 'write' : 0}
+        count = {'arc': 0, 'cache': 0, 'write': 0}
         self.cur.execute('SELECT * FROM feeds;')
         feeds = self.cur.fetchall()
         if feeds == []:
@@ -121,9 +123,10 @@ class TorrentCatcher():
                 if test[0][0] != 1:
                     self.write(title, link, feedname)
                     count['write'] += 1
-                    self.logger.info('[QUEUED] ' + title + ' was added to queue')
+                    self.logger.info('[QUEUED] '+title+' was added to queue')
                 else:
-                    self.cur.execute("SELECT * FROM torrents WHERE name=?", (title,))
+                    self.cur.execute("SELECT * FROM torrents WHERE name=?",
+                                     (title,))
                     status = self.cur.fetchall()
                     if status[0][4] == 1:
                         count['arc'] += 1
@@ -132,23 +135,27 @@ class TorrentCatcher():
         total = count['arc'] + count['cache'] + count['write']
         if total != 0:
             self.logger.info('[FEED COMPLETE] New Torrents: ' +
-                        str(count['write']))
+                             str(count['write']))
             self.logger.info('[FEED COMPLETE] Already Queued: ' +
-                        str(count['cache']))
+                             str(count['cache']))
             self.logger.info('[FEED COMPLETE] Already Archived: ' +
-                        str(count['arc']))
+                             str(count['arc']))
         else:
-            self.logger.error('No feed information found. Something is probably wrong.')
+            self.logger.error(
+                'No feed information found. Something is probably wrong.'
+            )
 
     # Function updates given entries to show they have been sent to the Archive
     def move(self, title):
-        self.cur.execute("UPDATE torrents SET downStatus=1 WHERE name=?", (title,))
+        self.cur.execute("UPDATE torrents SET downStatus=1 WHERE name=?",
+                         (title,))
         self.con.commit()
         self.logger.info('[ARCHIVED] ' + title + ' was moved to archive.')
 
-    # Add Feed utility. Takes the name and URL and appends it to the config file
+    # Add Feed utility. Takes the name and URL and appends to the config file
     def addfeed(self, name, url):
-        self.cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);', (name, url))
+        self.cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);',
+                         (name, url))
         self.con.commit()
         self.logger.info('[FEEDS] Feed "' + name + '" added successfully.')
 
@@ -158,10 +165,12 @@ class TorrentCatcher():
         if category == 'id':
             try:
                 qtest = int(query)
-                self.cur.execute("SELECT * FROM torrents WHERE id LIKE ?", (query,))
+                self.cur.execute("SELECT * FROM torrents WHERE id LIKE ?",
+                                 (query,))
                 results = self.cur.fetchall()
                 if results == []:
-                    print "No results found in '{0}' for '{1}".format(category, query)
+                    print "No results found in '{0}' for '{1}".format(category,
+                                                                      query)
                 else:
                     for each in results:
                         if each[4] == 0:
@@ -169,17 +178,21 @@ class TorrentCatcher():
                         elif each[4] == 1:
                             status = 'Archive'
                         resultlist.append([each[0], each[1], each[3], status])
-                    print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
+                    print tabulate(resultlist,
+                                   ['ID', 'Name', 'Source', 'Status'])
             except:
                 print "Please enter a valid ID number for ID searches."
         else:
             if category == 'name':
-                self.cur.execute("SELECT * FROM torrents WHERE name LIKE ?;", ('%'+query+'%',))
+                self.cur.execute("SELECT * FROM torrents WHERE name LIKE ?;",
+                                 ('%'+query+'%',))
             elif category == 'source':
-                self.cur.execute("SELECT * FROM torrents WHERE source LIKE ?;", ('%'+query+'%',))
+                self.cur.execute("SELECT * FROM torrents WHERE source LIKE ?;",
+                                 ('%'+query+'%',))
             results = self.cur.fetchall()
             if results == []:
-                print "No results found in '{0}' for '{1}'".format(category, query)
+                print "No results found in '{0}' for '{1}'".format(category,
+                                                                   query)
             else:
                 for each in results:
                     if each[4] == 0:
@@ -203,7 +216,9 @@ class TorrentCatcher():
             else:
                 for each in feedlist:
                     resultlist.append([each[0], each[1], each[2]])
-                print tabulate(resultlist, ['ID', 'Name', 'URL'], tablefmt='pipe')
+                print tabulate(resultlist,
+                               ['ID', 'Name', 'URL'],
+                               tablefmt='pipe')
         if cat == 'archive':
             down = 1
             status = 'Archive'
@@ -211,24 +226,30 @@ class TorrentCatcher():
             down = 0
             status = 'Queue'
         if (cat == 'archive') or (cat == 'queue'):
-            self.cur.execute('SELECT * FROM torrents WHERE downStatus=?;', (down,))
+            self.cur.execute('SELECT * FROM torrents WHERE downStatus=?;',
+                             (down,))
             results = self.cur.fetchall()
             for each in results:
                 resultlist.append([each[0], each[1], each[3], status])
-            print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'], tablefmt='pipe')
+            print tabulate(resultlist,
+                           ['ID', 'Name', 'Source', 'Status'],
+                           tablefmt='pipe')
 
     # Function to run the Archive only feature
     def archive(self, selID):
-        self.logger.info('[ARCHIVE ONLY] Moving selected torrents in queue to the archive')
+        self.logger.info(
+            '[ARCHIVE ONLY] Moving selected torrents in queue to the archive'
+        )
         if selID[0] == 'all':
             self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
             cachelist = self.cur.fetchall()
             if cachelist == []:
                 self.logger.info('[ARCHIVE COMPLETE] No torrents to archive')
-            else: 
+            else:
                 for each in cachelist:
                     self.move(each[1])
-                self.logger.info('[ARCHIVE COMPLETE] Archive process completed successfully')
+                self.logger.info(('[ARCHIVE COMPLETE] Archive process '
+                                  'completed successfully'))
         else:
             ids = []
             for each in selID:
@@ -239,7 +260,8 @@ class TorrentCatcher():
                     except:
                         print "'%s' is not a valid ID." % (each)
             for each in ids:
-                    self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
+                    self.cur.execute("SELECT * FROM torrents WHERE id=?",
+                                     (each,))
                     selection = self.cur.fetchall()
                     if selection == []:
                         self.logger.error(("ID '%s' does not exist") % (each))
@@ -248,23 +270,36 @@ class TorrentCatcher():
                         if seltor[4] == 0:
                             self.move(seltor[1])
                         elif seltor[4] == 1:
-                            self.logger.info('[ARCHIVE] %s is already in the archive.' % (seltor[1]))
-            self.logger.info('[ARCHIVE COMPLETE] Archive process completed successfully')
+                            self.logger.info((
+                                    '[ARCHIVE] %s is already in the archive.' %
+                                    (seltor[1])
+                            ))
+            self.logger.info(
+                '[ARCHIVE COMPLETE] Archive process completed successfully'
+            )
 
-    #Function to add items to the queue from the archive
+    # Function to add items to the queue from the archive
     def queue(self, selID):
-        self.logger.info('[QUEUE ONLY] Moving selected torrents in the archive to the queue')
+        self.logger.info(
+            '[QUEUE ONLY] Moving selected torrents in the archive to the queue'
+        )
         if selID[0] == 'all':
             self.cur.execute("SELECT * FROM torrents WHERE downStatus=1")
             cachelist = self.cur.fetchall()
             if cachelist == []:
                 self.logger.info('[QUEUE COMPLETE] No torrents to queue')
-            else: 
+            else:
                 for each in cachelist:
-                    self.cur.execute("UPDATE torrents SET downStatus=0 WHERE name=?", (each[1],))
+                    self.cur.execute(
+                        "UPDATE torrents SET downStatus=0 WHERE name=?",
+                        (each[1],)
+                    )
                     self.con.commit()
-                    self.logger.info('[QUEUED] ' + each[1] + ' was moved to the queue.')
-                self.logger.info('[QUEUE COMPLETE] Archive process completed successfully')
+                    self.logger.info(
+                        '[QUEUED] ' + each[1] + ' was moved to the queue.')
+                self.logger.info(
+                    '[QUEUE COMPLETE] Archive process completed successfully'
+                )
         else:
             ids = []
             for each in selID:
@@ -275,19 +310,29 @@ class TorrentCatcher():
                     except:
                         print "'%s' is not a valid ID." % (each)
             for each in ids:
-                    self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
+                    self.cur.execute("SELECT * FROM torrents WHERE id=?",
+                                     (each,))
                     selection = self.cur.fetchall()
                     if selection == []:
                         self.logger.error(("ID '%s' does not exist") % (each))
                     else:
                         seltor = selection[0]
                         if seltor[4] == 1:
-                            self.cur.execute("UPDATE torrents SET downStatus=0 WHERE name=?", (seltor[1],))
+                            self.cur.execute(
+                                ("UPDATE torrents SET downStatus=0 "
+                                 "WHERE name=?"),
+                                (seltor[1],)
+                            )
                             self.con.commit()
-                            self.logger.info('[QUEUED] ' + seltor[1] + ' was moved to the queue.')
+                            self.logger.info(
+                                '[QUEUE] '+seltor[1]+' was moved to the queue.'
+                            )
                         elif seltor[4] == 0:
-                            self.logger.info('[QUEUE] %s is already in the queue.' % (seltor[1]))
-            self.logger.info('[QUEUE COMPLETE] Queue process completed successfully')
+                            self.logger.info(
+                                '[QUEUE] %s is already in the queue.' %
+                                (seltor[1])
+                            )
+            self.logger.info('[COMPLETE] Queue process completed successfully')
 
     # Function to add files to Transmission over transmission-remote
     def transmission(self, title, url):
@@ -299,13 +344,17 @@ class TorrentCatcher():
         downdir = config['download_directory']
         self.logger.info('[TRANSMISSION] Starting download for ' + title)
         if not auth:
-            command = 'transmission-remote ' + host + ':' + port + ' -a "' + url + '"'
+            command = ('transmission-remote ' + host + ':' + port + ' -a "' +
+                       url + '"')
         else:
-            command = 'transmission-remote  ' + host + ':' + port + ' -n ' + authopt + ' -a "' + url + '"'
+            command = ('transmission-remote  ' + host + ':' + port + ' -n ' +
+                       authopt + ' -a "' + url + '"')
         if downdir != '':
             command = command + ' -w ' + downdir
-        transcmd = subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output,error = transcmd.communicate()
+        transcmd = subprocess.Popen(shlex.split(command),
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+        output, error = transcmd.communicate()
         if error == "":
             self.move(title)
             self.logger.info('[TRANSMISSION] ' + output.strip('\n'))
@@ -316,7 +365,9 @@ class TorrentCatcher():
 
     # Function to run the Download only feature
     def download(self, selID):
-        self.logger.info('[DOWNLOAD ONLY] Starting download of already queued torrents')
+        self.logger.info(
+            '[DOWNLOAD ONLY] Starting download of already queued torrents'
+        )
         if selID[0] == 'all':
             self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
             cachelist = self.cur.fetchall()
@@ -328,9 +379,14 @@ class TorrentCatcher():
                     test = self.transmission(each[1], each[2])
                     errors += test
                 if errors > 0:
-                    self.logger.info('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
+                    self.logger.info((
+                            '[DOWNLOAD COMPLETE] There were errors adding '
+                            'torrents to Transmission'
+                    ))
                 else:
-                    self.logger.info('[DOWNLOAD COMPLETE] Initiated all downloads successfully')
+                    self.logger.info(
+                        '[DOWNLOAD COMPLETE] Initiated downloads successfully'
+                    )
         else:
             errors = 0
             ids = []
@@ -349,11 +405,15 @@ class TorrentCatcher():
                 else:
                     seltor = selection[0]
                     test = self.transmission(seltor[1], seltor[2])
-                    errors +=test
+                    errors += test
             if errors > 0:
-                self.logger.info('[DOWNLOAD COMPLETE] There were errors adding torrents to Transmission')
+                self.logger.error(
+                    'There were errors adding torrents to Transmission'
+                )
             else:
-                self.logger.info('[DOWNLOAD COMPLETE] Initiated all downloads successfully')    
+                self.logger.info(
+                    '[DOWNLOAD COMPLETE] Initiated all downloads successfully'
+                )
 
     # The full automatic torrentcatcher
     def torrentcatcher(self):
@@ -362,13 +422,18 @@ class TorrentCatcher():
         self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
         cachelist = self.cur.fetchall()
         if cachelist == []:
-            self.logger.info('[TORRENTCATCHER COMPLETE] No torrents to download')
+            self.logger.info('[TORRENTCATCHER COMPLETE] No torrents to start')
         else:
             errors = 0
             for each in cachelist:
                 test = self.transmission(each[1], each[2])
                 errors += test
             if errors > 0:
-                self.logger.info('[TORRENTCATCHER COMPLETE] There were errors adding torrents to Transmission')
+                self.logger.error((
+                        '[COMPLETE] There were errors adding torrents to '
+                        'Transmission'
+                ))
             else:
-                self.logger.info('[TORRENTCATCHER COMPLETE] Initiated all downloads successfully')
+                self.logger.info(
+                    '[COMPLETE] Initiated all downloads successfully'
+                )

@@ -5,6 +5,7 @@ import os
 from os import mkdir, path
 from torrentcatcher import torrentcatcher
 
+
 def main():
     # Finds the location of torrentcatcher
     homeFolder = os.environ['HOME']
@@ -24,13 +25,14 @@ def main():
         nargs='+',
         metavar=('all', 'ID'),
         help=("Moves selected torrents to the archive. Using the argument "
-              "'all' will move all currently queued torrents to the archive. Use the '--list' option to see IDs.")
+              "'all' will move all currently queued torrents to the archive. "
+              "Use the '--list' option to see IDs.")
     )
     parser.add_argument(
         '-C',
         nargs=1,
         metavar='<path to trconfig file>',
-        help=("Overrides default config file location. If the config file does "
+        help=("Override default config file location. If the config file does "
               "not exist at given location, the file will be created there.")
     )
     parser.add_argument(
@@ -38,9 +40,9 @@ def main():
         '--download',
         nargs='+',
         metavar=('all', 'ID'),
-        help=("Moves selected torrents to Transmission.Using the argument 'all' "
-              "will move all currently queued torrents to Transmission. Use the "
-              "'--list' option to see IDs.")
+        help=("Moves selected torrents to Transmission. Using the argument "
+              "'all' will move all currently queued torrents to Transmission. "
+              "Use the '--list' option to see IDs.")
     )
     parser.add_argument(
         '-D',
@@ -82,7 +84,7 @@ def main():
         nargs='+',
         metavar=('all', 'ID'),
         help=("Moves selected torrents to the queue. Using the argument 'all' "
-              "will move all currently archived torrents to the queue. Use the "
+              "will move all archived torrents to the queue. Use the "
               "'--list' option to see IDs.")
     )
     parser.add_argument(
@@ -95,10 +97,14 @@ def main():
         '--search',
         nargs=1,
         choices=['name', 'source', 'id'],
-        help=("Searches archive and queue for given query. Can search by name, "
+        help=("Search archive and queue for given query. Can search by name, "
               "source, or ID number.")
     )
-    parser.add_argument('--version', action='version', version='%(prog)s 2.0.1')
+    parser.add_argument(
+        '--version',
+        action='version',
+        version='%(prog)s 2.0.2'
+    )
     args = parser.parse_args()
     # Turns quiet mode off and on
     quiet = args.quiet
@@ -113,13 +119,13 @@ def main():
     tc.configreader()
     # Interprets arguments to their respective functions
     argument = False
-    if args.archive != None:
+    if args.archive:
         argument = True
         tc.archive(args.archive)
-    if args.download != None:
+    if args.download:
         argument = True
         tc.download(args.download)
-    if args.add_feed != None:
+    if args.add_feed:
         argument = True
         tc.addfeed(args.add_feed[0], args.add_feed[1])
     if args.feed:
@@ -127,18 +133,18 @@ def main():
         tc.logger.info(
             '[FEED ONLY] Checking feeds for new torrents to queue')
         tc.feeder()
-    if args.list != None:
+    if args.list:
         argument = True
         tc.lister(args.list[0])
-    if args.queue != None:
+    if args.queue:
         argument = True
         tc.queue(args.queue)
-    if args.search != None:
+    if args.search:
         argument = True
         query = raw_input('Enter query: ')
         tc.torsearch(args.search[0], query)
     if not argument:
         tc.torrentcatcher()
-        
+
 if __name__ == '__main__':
     main()
