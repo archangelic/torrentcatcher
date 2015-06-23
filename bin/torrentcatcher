@@ -98,7 +98,7 @@ def main():
         help=("Searches archive and queue for given query. Can search by name, "
               "source, or ID number.")
     )
-    parser.add_argument('--version', action='version', version='%(prog)s 2.0.0')
+    parser.add_argument('--version', action='version', version='%(prog)s 2.0.1')
     args = parser.parse_args()
     # Turns quiet mode off and on
     quiet = args.quiet
