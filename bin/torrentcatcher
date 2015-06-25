@@ -1,16 +1,45 @@
 #!/usr/bin/env python
 import argparse
+import getpass
 import os
 
 from os import mkdir, path
 from torrentcatcher import torrentcatcher
 
 
+def setup(tc):
+    config = tc.configreader()
+    print "Starting setup..."
+    hostname = raw_input("Transmission-remote host [localhost]: ")
+    port = raw_input("Transmission-remote port [9091]: ")
+    auth = raw_input("Requires authentication [y/N]: ")
+    if auth.lower().strip() == "y":
+        user = raw_input("Username: ")
+        password = getpass.getpass("Password: ")
+    downloads = raw_input("Download directory: ")
+    new_feed = raw_input("Add a feed now? [y/N]: ")
+    if new_feed.lower().strip() == "y":
+        new_feed = True
+        feed_name = raw_input("Enter name for new feed: ")
+        feed_url = raw_input("URL for first feed: ")
+    if hostname:
+        config['hostname'] = hostname
+    if port:
+        config['port'] = port
+    if auth:
+        config['auth'] = True
+        config['username'] = user
+        config['password'] = password
+    print "Saving configuration..."
+    if new_feed:
+        tc.addfeed(feed_name, feed_url)
+    print "Setup complete!"
+
+
 def main():
-    # Finds the location of torrentcatcher
+    # Sets the location of torrentcatcher files
     homeFolder = os.environ['HOME']
     dataPath = path.join(homeFolder, '.torrentcatcher')
-    # Dictionary of values for Torrentcatcher class
     log = path.join(dataPath, 'torrentcatcher.log')
     config = path.join(dataPath, 'trconfig')
     database = path.join(dataPath, 'torcatch.db')
@@ -32,8 +61,7 @@ def main():
         '-C',
         nargs=1,
         metavar='<path to trconfig file>',
-        help=("Override default config file location. If the config file does "
-              "not exist at given location, the file will be created there.")
+        help="Override default config file location."
     )
     parser.add_argument(
         '-d',
@@ -48,8 +76,7 @@ def main():
         '-D',
         nargs=1,
         metavar='<path to database>',
-        help=("Overrides default database location. If the database file does "
-              "not exist at given location, it will be created there.")
+        help="Overrides default database location."
     )
     parser.add_argument(
         '-f',
@@ -101,11 +128,23 @@ def main():
               "source, or ID number.")
     )
     parser.add_argument(
+        '--setup',
+        help="Sets up the database and config in the default location.",
+        action="store_true"
+    )
+    parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 2.0.2'
+        version='%(prog)s 2.1.0'
     )
     args = parser.parse_args()
+    # Override default file locations
+    if args.C:
+        config = args.C
+    if args.D:
+        database = args.D
+    if args.L:
+        database = args.L
     # Turns quiet mode off and on
     quiet = args.quiet
     # Initialize Torrentcatcher class
@@ -143,6 +182,10 @@ def main():
         argument = True
         query = raw_input('Enter query: ')
         tc.torsearch(args.search[0], query)
+    if args.setup:
+        argument = True
+        print 'Setting up File locations...'
+        setup(tc)
     if not argument:
         tc.torrentcatcher()
 
