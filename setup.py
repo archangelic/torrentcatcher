@@ -5,7 +5,7 @@ setup(
     name="torrentcatcher",
     packages=['torrentcatcher'],
     version="2.1.0",
-    license="GPLv3"
+    license="GPLv3",
     url="https://github.com/archangelic/torrentcatcher",
     description=("Takes torrent or magnet links from rss feeds you provide, "
                  "parses them and sends them to transmission via the "
