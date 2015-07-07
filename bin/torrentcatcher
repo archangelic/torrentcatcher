@@ -11,9 +11,16 @@ def setup(tc):
     config = tc.configreader()
     print "Starting setup..."
     hostname = raw_input("Transmission-remote host [localhost]: ")
+    if not hostname.strip():
+        hostname = "localhost"
     port = raw_input("Transmission-remote port [9091]: ")
+    if not port.strip():
+        port = "9091"
     auth = raw_input("Requires authentication [y/N]: ")
+    if not auth.strip():
+        auth = False
     if auth.lower().strip() == "y":
+        auth = True
         user = raw_input("Username: ")
         password = getpass.getpass("Password: ")
     downloads = raw_input("Download directory: ")
@@ -135,7 +142,7 @@ def main():
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 2.1.0'
+        version='%(prog)s 2.1.1'
     )
     args = parser.parse_args()
     # Override default file locations
