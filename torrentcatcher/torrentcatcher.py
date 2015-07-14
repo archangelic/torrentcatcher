@@ -29,6 +29,9 @@ from datetime import datetime
 from feedparser import parse
 from tabulate import tabulate
 
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 
 class TorrentCatcher():
     def __init__(self, trconf, trlog, trdb, trquiet=False):
@@ -227,9 +230,9 @@ class TorrentCatcher():
             for each in results:
                 resultlist.append([
                         each[0],
-                        each[1].encode('utf-8'),
-                        each[3].encode('utf-8'),
-                        status.encode('utf-8')
+                        each[1],
+                        each[3],
+                        status
                     ])
             print tabulate(resultlist,
                            ['ID', 'Name', 'Source', 'Status'],
