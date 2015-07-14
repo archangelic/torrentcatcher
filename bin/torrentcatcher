@@ -38,7 +38,7 @@ def setup(tc):
     if port:
         config['port'] = port
     if auth:
-        config['auth'] = True
+        config['require_auth'] = True
         config['username'] = user
         config['password'] = password
     print "Saving configuration..."
