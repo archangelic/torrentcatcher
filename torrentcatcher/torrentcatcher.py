@@ -344,8 +344,10 @@ class TorrentCatcher():
                 )
             self.tremote.add_torrent(url)
             self.logger.info('Successfully added torrent: '+ title)
+            return 0
         except:
             self.logger.exception("An error occurred...")
+            return 1
 
     # Function to run the Download only feature
     def download(self, selID):
