@@ -42,7 +42,7 @@ def setup(tc):
         config['username'] = user
         config['password'] = password
     print "Saving configuration..."
-    if new_feed:
+    if new_feed.lower().strip() == 'y':
         tc.addfeed(feed_name, feed_url)
     print "Setup complete!"
 
