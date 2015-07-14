@@ -67,21 +67,6 @@ class TorrentCatcher():
         self.logger.addHandler(fhandler)
         if not trquiet:
             self.logger.addHandler(out)
-        
-        self.config = self.configreader()
-        self.downdir = self.config['download_directory']
-        if self.config['require_auth']:
-            self.tremote = transmissionrpc.Client(
-                address=self.config['hostname'],
-                port=int(self.config['port']),
-                user=self.config['username'],
-                password=self.config['password']
-            )
-        else:
-            self.tremote = transmissionrpc.Client(
-                address=self.config['hostname'],
-                port=int(self.config['port'])
-            )
 
     # Function to parse the config file and return the dictionary of values.
     # Also creates a config file if one does not exist.
@@ -343,6 +328,20 @@ class TorrentCatcher():
     # Function to add files to Transmission over transmission-remote
     def transmission(self, title, url):
         try:
+            config = self.configreader()
+            self.downdir = config['download_directory']
+            if config['require_auth']:
+                self.tremote = transmissionrpc.Client(
+                    address=config['hostname'],
+                    port=int(config['port']),
+                    user=config['username'],
+                    password=config['password']
+                )
+            else:
+                self.tremote = transmissionrpc.Client(
+                    address=config['hostname'],
+                    port=int(config['port'])
+                )
             self.tremote.add_torrent(url)
             self.logger.info('Successfully added torrent: '+ title)
         except:

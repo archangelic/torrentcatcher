@@ -149,11 +149,6 @@ def main():
         version='%(prog)s 2.1.1'
     )
     args = parser.parse_args()
-    # Run the setup
-    if args.setup:
-        argument = True
-        print 'Setting up File locations...'
-        setup(tc)
     # Override default file locations
     if args.C:
         config = args.C
@@ -198,6 +193,10 @@ def main():
         argument = True
         query = raw_input('Enter query: ')
         tc.torsearch(args.search[0], query)
+    if args.setup:
+        argument = True
+        print 'Setting up File locations...'
+        setup(tc)
     if not argument:
         tc.torrentcatcher()
 
