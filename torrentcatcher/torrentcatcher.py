@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ###########################################################################
-# torrentcatcher v2.1.1
+# torrentcatcher v3.0.0
 #     Copyright (C) 2015  Michael Hancock
 #
 #     This program is free software: you can redistribute it and/or modify
@@ -225,7 +225,12 @@ class TorrentCatcher():
                              (down,))
             results = self.cur.fetchall()
             for each in results:
-                resultlist.append([each[0], each[1], each[3], status])
+                resultlist.append([
+                        each[0].encode('utf-8'),
+                        each[1].encode('utf-8'),
+                        each[3].encode('utf-8'),
+                        status.encode('utf-8')
+                    ])
             print tabulate(resultlist,
                            ['ID', 'Name', 'Source', 'Status'],
                            tablefmt='pipe')
@@ -329,7 +334,9 @@ class TorrentCatcher():
     def transmission(self, title, url):
         try:
             config = self.configreader()
-            self.downdir = config['download_directory']
+            trargs = {'torrent':url}
+            if config['download_directory']:
+                trargs['download_dir'] = config['download_directory']
             if config['require_auth']:
                 self.tremote = transmissionrpc.Client(
                     address=config['hostname'],
@@ -342,8 +349,9 @@ class TorrentCatcher():
                     address=config['hostname'],
                     port=int(config['port'])
                 )
-            self.tremote.add_torrent(url)
+            self.tremote.add_torrent(**trargs)
             self.logger.info('Successfully added torrent: '+ title)
+            self.move(title)
             return 0
         except:
             self.logger.exception("An error occurred...")

@@ -147,7 +147,7 @@ def main():
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 2.1.1'
+        version='%(prog)s 3.0.0'
     )
     args = parser.parse_args()
     # Override default file locations
