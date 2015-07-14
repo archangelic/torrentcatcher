@@ -16,13 +16,17 @@ def setup(tc):
     port = raw_input("Transmission-remote port [9091]: ")
     if not port.strip():
         port = "9091"
-    auth = raw_input("Requires authentication [y/N]: ")
-    if not auth.strip():
+    auth_resp = raw_input("Requires authentication [y/N]: ")
+    if not auth_resp.strip():
         auth = False
-    if auth.lower().strip() == "y":
+    if auth_resp.lower().strip() == "y":
         auth = True
         user = raw_input("Username: ")
         password = getpass.getpass("Password: ")
+    elif auth_resp.lower().strip() == "n":
+        auth = False
+    else:
+        auth = False
     downloads = raw_input("Download directory: ")
     new_feed = raw_input("Add a feed now? [y/N]: ")
     if new_feed.lower().strip() == "y":

@@ -19,10 +19,9 @@
 
 import logging
 import logging.handlers
-import shlex
 import sqlite3 as lite
-import subprocess
 import sys
+import transmissionrpc
 import validate
 
 from configobj import ConfigObj
@@ -68,6 +67,21 @@ class TorrentCatcher():
         self.logger.addHandler(fhandler)
         if not trquiet:
             self.logger.addHandler(out)
+        
+        self.config = self.configreader(self.configfile)
+        self.downdir = self.config['download_directory']
+        if self.config['require_auth']:
+            self.tremote = transmissionrpc.Client(
+                address=self.config['hostname'],
+                port=int(self.config['port']),
+                user=self.config['username'],
+                password=self.config['password']
+            )
+        else:
+            self.tremote = transmissionrpc.Client(
+                address=self.config['hostname'],
+                port=int(self.config['port'])
+            )
 
     # Function to parse the config file and return the dictionary of values.
     # Also creates a config file if one does not exist.
@@ -328,32 +342,11 @@ class TorrentCatcher():
 
     # Function to add files to Transmission over transmission-remote
     def transmission(self, title, url):
-        config = self.configreader()
-        host = config['hostname']
-        port = config['port']
-        auth = config['require_auth']
-        authopt = config['username'] + ':' + config['password']
-        downdir = config['download_directory']
-        self.logger.info('Starting download for ' + title)
-        if not auth:
-            command = ('transmission-remote ' + host + ':' + port + ' -a "' +
-                       url + '"')
-        else:
-            command = ('transmission-remote  ' + host + ':' + port + ' -n ' +
-                       authopt + ' -a "' + url + '"')
-        if downdir != '':
-            command = command + ' -w ' + downdir
-        transcmd = subprocess.Popen(shlex.split(command),
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-        output, error = transcmd.communicate()
-        if error == "":
-            self.move(title)
-            self.logger.info(output.strip('\n'))
-            return 0
-        else:
-            self.logger.error(error.strip('\n'))
-            return 1
+        try:
+            self.tremote.add_torrent(url)
+            self.logger.info('Successfully added torrent: '+ title)
+        except:
+            self.logger.exception("An error occurred...")
 
     # Function to run the Download only feature
     def download(self, selID):
