@@ -229,7 +229,7 @@ class TorrentCatcher():
                         each[0],
                         each[1].encode('utf-8'),
                         each[3].encode('utf-8'),
-                        status
+                        status.encode('utf-8')
                     ])
             print tabulate(resultlist,
                            ['ID', 'Name', 'Source', 'Status'],
