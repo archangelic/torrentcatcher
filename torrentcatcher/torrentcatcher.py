@@ -68,7 +68,7 @@ class TorrentCatcher():
         if not trquiet:
             self.logger.addHandler(out)
         
-        self.config = self.configreader(self.configfile)
+        self.config = self.configreader()
         self.downdir = self.config['download_directory']
         if self.config['require_auth']:
             self.tremote = transmissionrpc.Client(
