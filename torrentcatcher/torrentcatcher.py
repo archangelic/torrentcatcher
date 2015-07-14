@@ -226,10 +226,10 @@ class TorrentCatcher():
             results = self.cur.fetchall()
             for each in results:
                 resultlist.append([
-                        each[0].encode('utf-8'),
+                        each[0],
                         each[1].encode('utf-8'),
                         each[3].encode('utf-8'),
-                        status.encode('utf-8')
+                        status
                     ])
             print tabulate(resultlist,
                            ['ID', 'Name', 'Source', 'Status'],
