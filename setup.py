@@ -4,7 +4,7 @@ from setuptools import setup
 setup(
     name="torrentcatcher",
     packages=['torrentcatcher'],
-    version="2.1.1",
+    version="2.1.2",
     license="GPLv3",
     url="https://github.com/archangelic/torrentcatcher",
     description=("Takes torrent or magnet links from rss feeds you provide, "

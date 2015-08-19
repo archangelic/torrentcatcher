@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ###########################################################################
-# torrentcatcher v2.1.1
+# torrentcatcher v2.1.2
 #     Copyright (C) 2015  Michael Hancock
 #
 #     This program is free software: you can redistribute it and/or modify

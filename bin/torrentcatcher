@@ -37,8 +37,8 @@ def setup(tc):
         config['hostname'] = hostname
     if port:
         config['port'] = port
-    if auth:
-        config['require_auth'] = True
+    if auth_in:
+        config['auth'] = True
         config['username'] = user
         config['password'] = password
     print "Saving configuration..."
@@ -147,7 +147,7 @@ def main():
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 3.0.0'
+        version='%(prog)s 2.1.2'
     )
     args = parser.parse_args()
     # Override default file locations
