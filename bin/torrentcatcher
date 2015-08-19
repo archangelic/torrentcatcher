@@ -37,7 +37,7 @@ def setup(tc):
         config['hostname'] = hostname
     if port:
         config['port'] = port
-    if auth_in:
+    if auth:
         config['auth'] = True
         config['username'] = user
         config['password'] = password
