@@ -16,13 +16,17 @@ def setup(tc):
     port = raw_input("Transmission-remote port [9091]: ")
     if not port.strip():
         port = "9091"
-    auth = raw_input("Requires authentication [y/N]: ")
-    if not auth.strip():
+    auth_in = raw_input("Requires authentication [y/N]: ")
+    if not auth_in.strip():
         auth = False
-    if auth.lower().strip() == "y":
+    if auth_in.lower().strip() == "y":
         auth = True
         user = raw_input("Username: ")
         password = getpass.getpass("Password: ")
+    elif auth_resp.lower().strip() == "n":
+        auth = False
+    else:
+        auth = False
     downloads = raw_input("Download directory: ")
     new_feed = raw_input("Add a feed now? [y/N]: ")
     if new_feed.lower().strip() == "y":
@@ -34,12 +38,13 @@ def setup(tc):
     if port:
         config['port'] = port
     if auth:
-        config['auth'] = True
+        config['require_auth'] = True
         config['username'] = user
         config['password'] = password
     print "Saving configuration..."
-    if new_feed:
+    if new_feed.lower().strip() == 'y':
         tc.addfeed(feed_name, feed_url)
+    config.write()
     print "Setup complete!"
 
 
@@ -142,7 +147,7 @@ def main():
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 2.1.1'
+        version='%(prog)s 3.0.0'
     )
     args = parser.parse_args()
     # Override default file locations
