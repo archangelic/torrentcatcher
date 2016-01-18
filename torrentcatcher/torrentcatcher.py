@@ -25,15 +25,11 @@ import transmissionrpc
 import validate
 
 from configobj import ConfigObj
-from datetime import datetime
 from feedparser import parse
 from tabulate import tabulate
 
-reload(sys)
-sys.setdefaultencoding('utf8')
 
-
-class TorrentCatcher():
+class TorrentCatcher:
     def __init__(self, trconf, trlog, trdb, trquiet=False):
         self.configfile = trconf
         self.log = trlog
@@ -98,11 +94,10 @@ class TorrentCatcher():
 
     # Function to write entries from the feed to the database
     def feeder(self):
-        entries = []
         count = {'arc': 0, 'cache': 0, 'write': 0}
         self.cur.execute('SELECT * FROM feeds;')
         feeds = self.cur.fetchall()
-        if feeds == []:
+        if not feeds:
             self.logger.warn((
                     "No feeds found! Use '-f' or '--add-feed' options to "
                     "add torrent feeds"
@@ -113,9 +108,9 @@ class TorrentCatcher():
             feeddat = parse(i[2])
             entries = feeddat.entries
             feedname = i[1]
-            for i in entries:
-                title = i['title']
-                link = i['link']
+            for e in entries:
+                title = e['title']
+                link = e['link']
                 self.cur.execute(
                     "SELECT EXISTS(SELECT * FROM torrents WHERE name=?);",
                     (title,)
@@ -166,7 +161,7 @@ class TorrentCatcher():
                 self.cur.execute("SELECT * FROM torrents WHERE id LIKE ?",
                                  (query,))
                 results = self.cur.fetchall()
-                if results == []:
+                if not results:
                     print "No results found in '{0}' for '{1}".format(category,
                                                                       query)
                 else:
@@ -188,7 +183,7 @@ class TorrentCatcher():
                 self.cur.execute("SELECT * FROM torrents WHERE source LIKE ?;",
                                  ('%'+query+'%',))
             results = self.cur.fetchall()
-            if results == []:
+            if not results:
                 print "No results found in '{0}' for '{1}'".format(category,
                                                                    query)
             else:
@@ -208,7 +203,7 @@ class TorrentCatcher():
         if cat == 'feeds':
             self.cur.execute('SELECT * FROM feeds;')
             feedlist = self.cur.fetchall()
-            if feedlist == []:
+            if not feedlist:
                 print 'No feeds were found!'
                 print "Use the '-f' or '--add-feed' option to add feeds."
             else:
@@ -246,7 +241,7 @@ class TorrentCatcher():
         if selID[0] == 'all':
             self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
             cachelist = self.cur.fetchall()
-            if cachelist == []:
+            if not cachelist:
                 self.logger.info('No torrents to archive')
             else:
                 for each in cachelist:
@@ -260,12 +255,12 @@ class TorrentCatcher():
                         int(each)
                         ids.append(each)
                     except:
-                        print "'%s' is not a valid ID." % (each)
+                        print "'%s' is not a valid ID." % each
             for each in ids:
                     self.cur.execute("SELECT * FROM torrents WHERE id=?",
                                      (each,))
                     selection = self.cur.fetchall()
-                    if selection == []:
+                    if not selection:
                         self.logger.error(("ID '%s' does not exist") % (each))
                     else:
                         seltor = selection[0]
@@ -288,7 +283,7 @@ class TorrentCatcher():
         if selID[0] == 'all':
             self.cur.execute("SELECT * FROM torrents WHERE downStatus=1")
             cachelist = self.cur.fetchall()
-            if cachelist == []:
+            if not cachelist:
                 self.logger.info('No torrents to queue')
             else:
                 for each in cachelist:
@@ -307,13 +302,13 @@ class TorrentCatcher():
                         int(each)
                         ids.append(each)
                     except:
-                        print "'%s' is not a valid ID." % (each)
+                        print "'%s' is not a valid ID." % each
             for each in ids:
                     self.cur.execute("SELECT * FROM torrents WHERE id=?",
                                      (each,))
                     selection = self.cur.fetchall()
-                    if selection == []:
-                        self.logger.error(("ID '%s' does not exist") % (each))
+                    if not selection:
+                        self.logger.error("ID '%s' does not exist" % each)
                     else:
                         seltor = selection[0]
                         if seltor[4] == 1:
@@ -337,7 +332,7 @@ class TorrentCatcher():
     def transmission(self, title, url):
         try:
             config = self.configreader()
-            trargs = {'torrent':url}
+            trargs = {'torrent': url}
             if config['download_directory']:
                 trargs['download_dir'] = config['download_directory']
             if config['require_auth']:
@@ -353,7 +348,7 @@ class TorrentCatcher():
                     port=int(config['port'])
                 )
             self.tremote.add_torrent(**trargs)
-            self.logger.info('Successfully added torrent: '+ title)
+            self.logger.info('Successfully added torrent: ' + title)
             self.move(title)
             return 0
         except:
@@ -368,7 +363,7 @@ class TorrentCatcher():
         if selID[0] == 'all':
             self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
             cachelist = self.cur.fetchall()
-            if cachelist == []:
+            if not cachelist:
                 self.logger.info('No torrents to download')
             else:
                 errors = 0
@@ -392,12 +387,12 @@ class TorrentCatcher():
                         int(each)
                         ids.append(each)
                     except:
-                        print "'%s' is not a valid ID." % (each)
+                        print "'%s' is not a valid ID." % each
             for each in ids:
                 self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
                 selection = self.cur.fetchall()
-                if selection == []:
-                    self.logger.error(("ID '%s' does not exist") % (each))
+                if not selection:
+                    self.logger.error("ID '%s' does not exist" % each)
                 else:
                     seltor = selection[0]
                     test = self.transmission(seltor[1], seltor[2])
@@ -415,7 +410,7 @@ class TorrentCatcher():
         self.feeder()
         self.cur.execute("SELECT * FROM torrents WHERE downStatus=0")
         cachelist = self.cur.fetchall()
-        if cachelist == []:
+        if not cachelist:
             self.logger.info('No torrents to start')
         else:
             errors = 0

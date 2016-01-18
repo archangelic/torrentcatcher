@@ -41,6 +41,7 @@ def setup(tc):
         config['require_auth'] = True
         config['username'] = user
         config['password'] = password
+    config['download_directory'] = downloads
     print "Saving configuration..."
     if new_feed.lower().strip() == 'y':
         tc.addfeed(feed_name, feed_url)
