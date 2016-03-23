@@ -1,7 +1,7 @@
 torrentcatcher
 ===========
 ###Description
-Takes torrent or magnet links from rss feeds you provide, parses them and sends them to transmission via the transmission-remote command line utility.
+Takes torrent or magnet links from rss feeds you provide, parses them and sends them to transmission.
 ###Installation and Usage
 To install this for your personal use run these commands:
 ```
