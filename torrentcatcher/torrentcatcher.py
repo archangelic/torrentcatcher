@@ -37,13 +37,16 @@ class TorrentCatcher:
         # Creates database if it does not exist
         self.con = lite.connect(trdb)
         self.cur = self.con.cursor()
+        self.cur.execute(
+                'CREATE TABLE IF NOT EXISTS info(a TEXT, b TEXT)'
+            )
         self.cur.execute((
                 'CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, '
                 'name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);'
             ))
         self.cur.execute((
                 'CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, '
-                'name TEXT, url TEXT);'
+                'name TEXT, url TEXT, tag TEXT);'
             ))
         self.con.commit()
         # Set up logger
@@ -110,7 +113,7 @@ class TorrentCatcher:
             feedname = i[1]
             for e in entries:
                 title = e['title']
-                link = e['link']
+                link = e[i[3]]
                 self.cur.execute(
                     "SELECT EXISTS(SELECT * FROM torrents WHERE name=?);",
                     (title,)
@@ -146,9 +149,9 @@ class TorrentCatcher:
         self.logger.info(title + ' was moved to archive.')
 
     # Add Feed utility. Takes the name and URL and appends to the config file
-    def addfeed(self, name, url):
-        self.cur.execute('INSERT INTO feeds(name, url) VALUES (?,?);',
-                         (name, url))
+    def addfeed(self, name, url, tag):
+        self.cur.execute('INSERT INTO feeds(name, url, tag) VALUES (?,?,?);',
+                         (name, url, tag))
         self.con.commit()
         self.logger.info('Feed "' + name + '" added successfully.')
 

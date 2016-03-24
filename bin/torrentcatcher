@@ -2,10 +2,11 @@
 import argparse
 import getpass
 import os
+import re
+import sqlite3 as lite
 
 from os import mkdir, path
 from torrentcatcher import torrentcatcher
-
 
 def setup(tc):
     config = tc.configreader()
@@ -33,6 +34,10 @@ def setup(tc):
         new_feed = True
         feed_name = raw_input("Enter name for new feed: ")
         feed_url = raw_input("URL for first feed: ")
+        feed_tag = raw_input("RSS tag for torrent or magnet link: ")
+        feed_tag = feed_tag.lower()
+        if feed_tag == "":
+        	feed_tag = "link"
     if hostname:
         config['hostname'] = hostname
     if port:
@@ -44,10 +49,58 @@ def setup(tc):
     config['download_directory'] = downloads
     print "Saving configuration..."
     if new_feed.lower().strip() == 'y':
-        tc.addfeed(feed_name, feed_url)
+        tc.addfeed(feed_name, feed_url, tag=feed_tag)
     config.write()
     print "Setup complete!"
 
+def update(database):
+    con = lite.connect(database)
+    cur = con.cursor()
+    try:
+        cur.execute('SELECT b FROM info WHERE a="version"')
+        version = cur.fetchall()[0][0]
+    except:
+        cur.execute(
+                'CREATE TABLE IF NOT EXISTS info(a,b)'
+            )
+        cur.execute('INSERT INTO info(a,b) VALUES ("version", "1.0.0")')
+        con.commit()
+        version = "1.0.0"
+    if version == "1.0.0":
+        print "Database needs to be updated"
+        print "Please enter the RSS tag name for the magnet or torrent link location for each feed (defaults to 'link')" 
+        cur.execute('SELECT * FROM feeds')
+        feeds = cur.fetchall()
+        cur.execute("CREATE TABLE IF NOT EXISTS hold(name, url, tag)")
+        con.commit()
+        for each in feeds:
+            x,name,url = each
+            print name + " at " +url
+            tag = raw_input("RSS tag: ")
+            tag = tag.lower()
+            if tag == "":
+            	tag = "link"
+            cur.execute('INSERT INTO hold(name, url, tag) VALUES (?,?,?)',
+                        (name, url, tag))
+        con.commit()
+        cur.execute('DROP TABLE feeds')
+        cur.execute((
+                'CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, '
+                'name TEXT, url TEXT, tag TEXT);'
+            ))
+        cur.execute('SELECT * FROM hold')
+        hold = cur.fetchall()
+        for each in hold:
+            name,url,tag = each
+            cur.execute(
+                    'INSERT INTO feeds(name, url, tag) VALUES(?,?,?)',
+                    (name, url, tag)
+                )
+        con.commit()
+        cur.execute('DROP TABLE hold')
+        cur.execute('UPDATE info SET b="3.1.0" WHERE a="version"')
+        con.commit()
+		
 
 def main():
     # Sets the location of torrentcatcher files
@@ -94,8 +147,8 @@ def main():
     parser.add_argument(
         '-f',
         '--add-feed',
-        nargs=2,
-        metavar=('<name>', '<url>'),
+        nargs=3,
+        metavar=('<name>', '<url>', '<RSS tag>'),
         help="Adds given feed to the database."
     )
     parser.add_argument(
@@ -160,6 +213,8 @@ def main():
         database = args.L
     # Turns quiet mode off and on
     quiet = args.quiet
+    # Check if database needs updating
+    update(database)
     # Initialize Torrentcatcher class
     tc = torrentcatcher.TorrentCatcher(
         trconf=config,
@@ -179,7 +234,7 @@ def main():
         tc.download(args.download)
     if args.add_feed:
         argument = True
-        tc.addfeed(args.add_feed[0], args.add_feed[1])
+        tc.addfeed(args.add_feed[0], args.add_feed[1], args.add_feed[2])
     if args.feed:
         argument = True
         tc.logger.info(
