@@ -8,8 +8,7 @@ setup(
     license="GPLv3",
     url="https://github.com/archangelic/torrentcatcher",
     description=("Takes torrent or magnet links from rss feeds you provide, "
-                 "parses them and sends them to transmission via the "
-                 "transmission-remote command line utility."),
+                 "parses them and sends them to transmission."),
     author="Michael Hancock",
     author_email="michaelhancock89@gmail.com",
     download_url=(
