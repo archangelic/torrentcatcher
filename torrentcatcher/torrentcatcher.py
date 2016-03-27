@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ###########################################################################
-# torrentcatcher v3.0.0
+# torrentcatcher v3.1.0
 #     Copyright (C) 2015  Michael Hancock
 #
 #     This program is free software: you can redistribute it and/or modify
@@ -40,6 +40,7 @@ class TorrentCatcher:
         self.cur.execute(
                 'CREATE TABLE IF NOT EXISTS info(a TEXT, b TEXT)'
             )
+        self.cur.execute('INSERT INTO info(a,b) VALUES("version", "3.1.0")')
         self.cur.execute((
                 'CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, '
                 'name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);'

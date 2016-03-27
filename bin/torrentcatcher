@@ -35,7 +35,7 @@ def setup(tc):
         feed_name = raw_input("Enter name for new feed: ")
         feed_url = raw_input("URL for first feed: ")
         feed_tag = raw_input("RSS tag for torrent or magnet link: ")
-        feed_tag = feed_tag.lower()
+        feed_tag = feed_tag.lower().replace(":", "_")
         if feed_tag == "":
         	feed_tag = "link"
     if hostname:
@@ -48,7 +48,7 @@ def setup(tc):
         config['password'] = password
     config['download_directory'] = downloads
     print "Saving configuration..."
-    if new_feed.lower().strip() == 'y':
+    if new_feed:
         tc.addfeed(feed_name, feed_url, tag=feed_tag)
     config.write()
     print "Setup complete!"
@@ -201,7 +201,7 @@ def main():
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 3.0.0'
+        version='%(prog)s 3.1.0'
     )
     args = parser.parse_args()
     # Override default file locations
@@ -214,7 +214,8 @@ def main():
     # Turns quiet mode off and on
     quiet = args.quiet
     # Check if database needs updating
-    update(database)
+    if not args.setup:
+    	update(database)
     # Initialize Torrentcatcher class
     tc = torrentcatcher.TorrentCatcher(
         trconf=config,
@@ -234,7 +235,8 @@ def main():
         tc.download(args.download)
     if args.add_feed:
         argument = True
-        tc.addfeed(args.add_feed[0], args.add_feed[1], args.add_feed[2])
+        tag = args.add_feed[2].lower().replace(':', '_')
+        tc.addfeed(args.add_feed[0], args.add_feed[1],)
     if args.feed:
         argument = True
         tc.logger.info(
