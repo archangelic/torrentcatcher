@@ -34,10 +34,6 @@ def setup(tc):
         new_feed = True
         feed_name = raw_input("Enter name for new feed: ")
         feed_url = raw_input("URL for first feed: ")
-        feed_tag = raw_input("RSS tag for torrent or magnet link: ")
-        feed_tag = feed_tag.lower().replace(":", "_")
-        if feed_tag == "":
-        	feed_tag = "link"
     if hostname:
         config['hostname'] = hostname
     if port:
@@ -49,7 +45,7 @@ def setup(tc):
     config['download_directory'] = downloads
     print "Saving configuration..."
     if new_feed:
-        tc.addfeed(feed_name, feed_url, tag=feed_tag)
+        tc.addfeed(feed_name, feed_url)
     config.write()
     print "Setup complete!"
 
@@ -68,7 +64,7 @@ def update(database):
         version = "1.0.0"
     if version == "1.0.0":
         print "Database needs to be updated"
-        print "Please enter the RSS tag name for the magnet or torrent link location for each feed (defaults to 'link')" 
+        print "Please enter the RSS tag name for the magnet or torrent link location for each feed (defaults to 'link')"
         cur.execute('SELECT * FROM feeds')
         feeds = cur.fetchall()
         cur.execute("CREATE TABLE IF NOT EXISTS hold(name, url, tag)")
@@ -98,9 +94,12 @@ def update(database):
                 )
         con.commit()
         cur.execute('DROP TABLE hold')
-        cur.execute('UPDATE info SET b="3.1.0" WHERE a="version"')
+        cur.execute('UPDATE info SET b="3.1.1" WHERE a="version"')
         con.commit()
-		
+    else:
+        cur.execute('UPDATE info SET b="3.1.1" WHERE a="version"')
+        con.commit()
+
 
 def main():
     # Sets the location of torrentcatcher files
@@ -147,8 +146,8 @@ def main():
     parser.add_argument(
         '-f',
         '--add-feed',
-        nargs=3,
-        metavar=('<name>', '<url>', '<RSS tag>'),
+        nargs=2,
+        metavar=('<name>', '<url>'),
         help="Adds given feed to the database."
     )
     parser.add_argument(
@@ -201,7 +200,7 @@ def main():
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 3.1.0'
+        version='%(prog)s 3.1.1'
     )
     args = parser.parse_args()
     # Override default file locations
@@ -235,8 +234,7 @@ def main():
         tc.download(args.download)
     if args.add_feed:
         argument = True
-        tag = args.add_feed[2].lower().replace(':', '_')
-        tc.addfeed(args.add_feed[0], args.add_feed[1],)
+        tc.addfeed(args.add_feed[0], args.add_feed[1])
     if args.feed:
         argument = True
         tc.logger.info(

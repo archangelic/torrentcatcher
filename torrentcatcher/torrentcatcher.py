@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ###########################################################################
-# torrentcatcher v3.1.0
+# torrentcatcher v3.1.1
 #     Copyright (C) 2015  Michael Hancock
 #
 #     This program is free software: you can redistribute it and/or modify
@@ -40,7 +40,7 @@ class TorrentCatcher:
         self.cur.execute(
                 'CREATE TABLE IF NOT EXISTS info(a TEXT, b TEXT)'
             )
-        self.cur.execute('INSERT INTO info(a,b) VALUES("version", "3.1.0")')
+        self.cur.execute('INSERT INTO info(a,b) VALUES("version", "3.1.1")')
         self.cur.execute((
                 'CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, '
                 'name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);'
@@ -150,11 +150,33 @@ class TorrentCatcher:
         self.logger.info(title + ' was moved to archive.')
 
     # Add Feed utility. Takes the name and URL and appends to the config file
-    def addfeed(self, name, url, tag):
-        self.cur.execute('INSERT INTO feeds(name, url, tag) VALUES (?,?,?);',
-                         (name, url, tag))
-        self.con.commit()
-        self.logger.info('Feed "' + name + '" added successfully.')
+    def addfeed(self, name, url):
+        self.logger.info("Processing feed...")
+        tag = ''
+        magnet = ''
+        torrent = ''
+        feedData = parse(url)
+        entries = feedData.entries
+        e = entries[0]
+        for each in e:
+            try:
+                if e[each].startswith('magnet:'):
+                    magnet = each
+                elif e[each].endswith('.torrent'):
+                    torrent = each
+            except:
+                x = 1
+        if magnet:
+            tag = magnet
+        elif torrent:
+            tag = torrent
+        else:
+            self.logger.error("Feed contains no link to magnet or torrent file")
+        if tag:
+            self.cur.execute('INSERT INTO feeds(name, url, tag) VALUES (?,?,?);',
+                             (name, url, tag))
+            self.con.commit()
+            self.logger.info('Feed "' + name + '" added successfully.')
 
     # Searches the database for a given query
     def torsearch(self, category, query):
