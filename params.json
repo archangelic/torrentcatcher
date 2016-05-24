@@ -1,0 +1,6 @@
+{
+  "name": "Torrentcatcher",
+  "tagline": "Takes torrent urls from RSS feeds and downloads them using transmission",
+  "body": "### ABOUT\r\ntorrentcatcher is a simple python script that feeds magnet or torrent links to Transmission using rss feeds.",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
