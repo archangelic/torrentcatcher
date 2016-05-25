@@ -42,7 +42,8 @@ class TorrentCatcher:
                 'CREATE TABLE IF NOT EXISTS info(a TEXT, b TEXT)'
             )
         self.cur.execute(
-                'INSERT INTO info(a,b) VALUES("version", ?)', (CurrentVersion,)
+                'INSERT INTO info(a,b) VALUES("version", ?)',
+                (self.currentVersion,)
             )
         self.cur.execute((
                 'CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, '

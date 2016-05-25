@@ -4,15 +4,15 @@ from setuptools import setup
 setup(
     name="torrentcatcher",
     packages=['torrentcatcher'],
-    version="3.1.1",
+    version="3.2.0",
     license="GPLv3",
-    url="https://github.com/archangelic/torrentcatcher",
+    url="http://archangelic.github.io/torrentcatcher/",
     description=("Takes torrent or magnet links from rss feeds you provide, "
                  "parses them and sends them to transmission."),
     author="Michael Hancock",
     author_email="michaelhancock89@gmail.com",
     download_url=(
-        "https://github.com/archangelic/torrentcatcher/tarball/v3.1.1"
+        "https://github.com/archangelic/torrentcatcher/tarball/v3.2.0"
     ),
     dependency_links=[
         'http://www.voidspace.org.uk/downloads/validate.py#egg=validate-1.0.1'
