@@ -1,116 +1,20 @@
 #!/usr/bin/env python
 import argparse
-import getpass
 import os
-import re
-import sqlite3 as lite
+import torrentcatcher as catcher
 
-from os import mkdir, path
-from torrentcatcher import torrentcatcher
-
-def setup(tc):
-    config = tc.configreader()
-    print "Starting setup..."
-    hostname = raw_input("Transmission-remote host [localhost]: ")
-    if not hostname.strip():
-        hostname = "localhost"
-    port = raw_input("Transmission-remote port [9091]: ")
-    if not port.strip():
-        port = "9091"
-    auth_resp = raw_input("Requires authentication [y/N]: ")
-    if not auth_resp.strip():
-        auth = False
-    if auth_resp.lower().strip() == "y":
-        auth = True
-        user = raw_input("Username: ")
-        password = getpass.getpass("Password: ")
-    elif auth_resp.lower().strip() == "n":
-        auth = False
-    else:
-        auth = False
-    downloads = raw_input("Download directory: ")
-    new_feed = raw_input("Add a feed now? [y/N]: ")
-    if new_feed.lower().strip() == "y":
-        new_feed = True
-        feed_name = raw_input("Enter name for new feed: ")
-        feed_url = raw_input("URL for first feed: ")
-    if hostname:
-        config['hostname'] = hostname
-    if port:
-        config['port'] = port
-    if auth:
-        config['require_auth'] = True
-        config['username'] = user
-        config['password'] = password
-    config['download_directory'] = downloads
-    print "Saving configuration..."
-    if new_feed:
-        tc.addfeed(feed_name, feed_url)
-    config.write()
-    print "Setup complete!"
-
-def update(database):
-    con = lite.connect(database)
-    cur = con.cursor()
-    try:
-        cur.execute('SELECT b FROM info WHERE a="version"')
-        version = cur.fetchall()[0][0]
-    except:
-        cur.execute(
-                'CREATE TABLE IF NOT EXISTS info(a,b)'
-            )
-        cur.execute('INSERT INTO info(a,b) VALUES ("version", "1.0.0")')
-        con.commit()
-        version = "1.0.0"
-    if version == "1.0.0":
-        print "Database needs to be updated"
-        print "Please enter the RSS tag name for the magnet or torrent link location for each feed (defaults to 'link')"
-        cur.execute('SELECT * FROM feeds')
-        feeds = cur.fetchall()
-        cur.execute("CREATE TABLE IF NOT EXISTS hold(name, url, tag)")
-        con.commit()
-        for each in feeds:
-            x,name,url = each
-            print name + " at " +url
-            tag = raw_input("RSS tag: ")
-            tag = tag.lower()
-            if tag == "":
-            	tag = "link"
-            cur.execute('INSERT INTO hold(name, url, tag) VALUES (?,?,?)',
-                        (name, url, tag))
-        con.commit()
-        cur.execute('DROP TABLE feeds')
-        cur.execute((
-                'CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, '
-                'name TEXT, url TEXT, tag TEXT);'
-            ))
-        cur.execute('SELECT * FROM hold')
-        hold = cur.fetchall()
-        for each in hold:
-            name,url,tag = each
-            cur.execute(
-                    'INSERT INTO feeds(name, url, tag) VALUES(?,?,?)',
-                    (name, url, tag)
-                )
-        con.commit()
-        cur.execute('DROP TABLE hold')
-        cur.execute('UPDATE info SET b="3.1.1" WHERE a="version"')
-        con.commit()
-    else:
-        cur.execute('UPDATE info SET b="3.1.1" WHERE a="version"')
-        con.commit()
-
+currentVersion = "3.2.0"
 
 def main():
     # Sets the location of torrentcatcher files
     homeFolder = os.environ['HOME']
-    dataPath = path.join(homeFolder, '.torrentcatcher')
-    log = path.join(dataPath, 'torrentcatcher.log')
-    config = path.join(dataPath, 'trconfig')
-    database = path.join(dataPath, 'torcatch.db')
+    dataPath = os.path.join(homeFolder, '.torrentcatcher')
+    log = os.path.join(dataPath, 'torrentcatcher.log')
+    config = os.path.join(dataPath, 'trconfig')
+    database = os.path.join(dataPath, 'torcatch.db')
     # Creates data directory for config file, database, and log file
-    if not path.isdir(dataPath):
-        mkdir(dataPath)
+    if not os.path.isdir(dataPath):
+        os.mkdir(dataPath)
     # Parsing out arguments for command line input
     parser = argparse.ArgumentParser(prog='torrentcatcher')
     parser.add_argument(
@@ -142,6 +46,13 @@ def main():
         nargs=1,
         metavar='<path to database>',
         help="Overrides default database location."
+    )
+    parser.add_argument(
+        '-df',
+        '--del-feed',
+        nargs=1
+        metavar='<ID>',
+        help="Deletes unwanted feed. Use '--list feeds' to see all feed IDs."
     )
     parser.add_argument(
         '-f',
@@ -200,7 +111,7 @@ def main():
     parser.add_argument(
         '--version',
         action='version',
-        version='%(prog)s 3.1.1'
+        version='%(prog)s ' + currentVersion
     )
     args = parser.parse_args()
     # Override default file locations
@@ -214,9 +125,9 @@ def main():
     quiet = args.quiet
     # Check if database needs updating
     if not args.setup:
-    	update(database)
+    	torrentcatcher.update.start(database)
     # Initialize Torrentcatcher class
-    tc = torrentcatcher.TorrentCatcher(
+    tc = catcher.torrentcatcher.TorrentCatcher(
         trconf=config,
         trlog=log,
         trquiet=quiet,
@@ -235,6 +146,9 @@ def main():
     if args.add_feed:
         argument = True
         tc.addfeed(args.add_feed[0], args.add_feed[1])
+    if args.del_feed:
+        argument = True
+        tc.delfeed(args.del_feed[0])
     if args.feed:
         argument = True
         tc.logger.info(
@@ -253,7 +167,7 @@ def main():
     if args.setup:
         argument = True
         print 'Setting up File locations...'
-        setup(tc)
+        tc.setup()
     if not argument:
         tc.torrentcatcher()
 

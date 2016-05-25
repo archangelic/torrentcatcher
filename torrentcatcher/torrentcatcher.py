@@ -17,6 +17,7 @@
 #     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ###########################################################################
 
+import getpass
 import logging
 import logging.handlers
 import sqlite3 as lite
@@ -28,9 +29,9 @@ from configobj import ConfigObj
 from feedparser import parse
 from tabulate import tabulate
 
-
 class TorrentCatcher:
     def __init__(self, trconf, trlog, trdb, trquiet=False):
+        self.currentVersion = "3.2.0"
         self.configfile = trconf
         self.log = trlog
         self.quiet = trquiet
@@ -40,7 +41,9 @@ class TorrentCatcher:
         self.cur.execute(
                 'CREATE TABLE IF NOT EXISTS info(a TEXT, b TEXT)'
             )
-        self.cur.execute('INSERT INTO info(a,b) VALUES("version", "3.1.1")')
+        self.cur.execute(
+                'INSERT INTO info(a,b) VALUES("version", ?)', (CurrentVersion,)
+            )
         self.cur.execute((
                 'CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, '
                 'name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);'
@@ -177,6 +180,13 @@ class TorrentCatcher:
                              (name, url, tag))
             self.con.commit()
             self.logger.info('Feed "' + name + '" added successfully.')
+
+    # Deletes a given feed
+    def delfeed(self, feedID):
+        self.logger.info("Deleting feed")
+        self.cur.execute("DELETE FROM feeds WHERE id LIKE ?", (feedID,))
+        self.con.commit()
+        self.logger.info("Feed ID " + feedID + " deleted")
 
     # Searches the database for a given query
     def torsearch(self, category, query):
@@ -451,3 +461,44 @@ class TorrentCatcher:
                 self.logger.info(
                     'Initiated all downloads successfully'
                 )
+
+    def setup(self):
+        config = self.configreader()
+        print "Starting setup..."
+        hostname = raw_input("Transmission-remote host [localhost]: ")
+        if not hostname.strip():
+            hostname = "localhost"
+        port = raw_input("Transmission-remote port [9091]: ")
+        if not port.strip():
+            port = "9091"
+        auth_resp = raw_input("Requires authentication [y/N]: ")
+        if not auth_resp.strip():
+            auth = False
+        if auth_resp.lower().strip() == "y":
+            auth = True
+            user = raw_input("Username: ")
+            password = getpass.getpass("Password: ")
+        elif auth_resp.lower().strip() == "n":
+            auth = False
+        else:
+            auth = False
+        downloads = raw_input("Download directory: ")
+        new_feed = raw_input("Add a feed now? [y/N]: ")
+        if new_feed.lower().strip() == "y":
+            new_feed = True
+            feed_name = raw_input("Enter name for new feed: ")
+            feed_url = raw_input("URL for first feed: ")
+        if hostname:
+            config['hostname'] = hostname
+        if port:
+            config['port'] = port
+        if auth:
+            config['require_auth'] = True
+            config['username'] = user
+            config['password'] = password
+        config['download_directory'] = downloads
+        print "Saving configuration..."
+        if new_feed:
+            self.addfeed(feed_name, feed_url)
+        config.write()
+        print "Setup complete!"
