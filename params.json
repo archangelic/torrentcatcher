@@ -1,6 +1,6 @@
 {
   "name": "Torrentcatcher",
   "tagline": "Takes torrent urls from RSS feeds and downloads them using transmission",
-  "body": "### ABOUT\r\ntorrentcatcher is a simple python script that feeds magnet or torrent links to Transmission using rss feeds.",
+  "body": "###Description\r\nTakes torrent or magnet links from rss feeds you provide, parses them and sends them to transmission.\r\n###Installation and Usage\r\nTo install this for your personal use run these commands:\r\n```\r\ngit clone https://github.com/archangelic/torrentcatcher\r\ncd torrentcatcher/\r\npython setup.py install\r\ntorrentcatcher --setup\r\n```\r\nOR\r\n`pip install torrentcatcher`\r\n\r\nFollow the setup instructions. Once completed, you will be able to just run `torrentcatcher` to start downloading from the feed you added!\r\n\r\n`torrentcatcher.py -h` will reveal all available options and their descriptions.\r\n",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }
