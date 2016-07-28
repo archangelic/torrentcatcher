@@ -4,7 +4,8 @@ import os
 
 from torrentcatcher import torrentcatcher, update
 
-currentVersion = "3.2.0"
+currentVersion = "3.2.1"
+
 
 def main():
     # Sets the location of torrentcatcher files
@@ -126,7 +127,7 @@ def main():
     quiet = args.quiet
     # Check if database needs updating
     if not args.setup:
-    	update.start(database)
+        update.start(database)
     # Initialize Torrentcatcher class
     tc = torrentcatcher.TorrentCatcher(
         trconf=config,
@@ -171,6 +172,7 @@ def main():
         tc.setup()
     if not argument:
         tc.torrentcatcher()
+
 
 if __name__ == '__main__':
     main()

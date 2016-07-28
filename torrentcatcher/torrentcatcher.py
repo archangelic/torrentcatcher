@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 ###########################################################################
-# torrentcatcher v3.1.1
-#     Copyright (C) 2015  Michael Hancock
+# torrentcatcher v3.2.1
+#     Copyright (C) 2016  Michael Hancock
 #
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -29,9 +29,10 @@ from configobj import ConfigObj
 from feedparser import parse
 from tabulate import tabulate
 
+
 class TorrentCatcher:
     def __init__(self, trconf, trlog, trdb, trquiet=False):
-        self.currentVersion = "3.2.0"
+        self.currentVersion = "3.2.1"
         self.configfile = trconf
         self.log = trlog
         self.quiet = trquiet
@@ -39,20 +40,20 @@ class TorrentCatcher:
         self.con = lite.connect(trdb)
         self.cur = self.con.cursor()
         self.cur.execute(
-                'CREATE TABLE IF NOT EXISTS info(a TEXT, b TEXT)'
-            )
+            'CREATE TABLE IF NOT EXISTS info(a TEXT, b TEXT)'
+        )
         self.cur.execute(
-                'INSERT INTO info(a,b) VALUES("version", ?)',
-                (self.currentVersion,)
-            )
+            'INSERT INTO info(a,b) VALUES("version", ?)',
+            (self.currentVersion,)
+        )
         self.cur.execute((
-                'CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, '
-                'name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);'
-            ))
+            'CREATE TABLE IF NOT EXISTS torrents(id INTEGER PRIMARY KEY, '
+            'name TEXT, url TEXT, source TEXT, downStatus BOOLEAN);'
+        ))
         self.cur.execute((
-                'CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, '
-                'name TEXT, url TEXT, tag TEXT);'
-            ))
+            'CREATE TABLE IF NOT EXISTS feeds(id INTEGER PRIMARY KEY, '
+            'name TEXT, url TEXT, tag TEXT);'
+        ))
         self.con.commit()
         # Set up logger
         self.logger = logging.getLogger('torrentcatcher')
@@ -107,9 +108,9 @@ class TorrentCatcher:
         feeds = self.cur.fetchall()
         if not feeds:
             self.logger.warn((
-                    "No feeds found! Use '-f' or '--add-feed' options to "
-                    "add torrent feeds"
-                ))
+                "No feeds found! Use '-f' or '--add-feed' options to "
+                "add torrent feeds"
+            ))
             return 0
         for i in feeds:
             self.logger.info('Reading entries for feed "' + i[1] + '"')
@@ -127,7 +128,7 @@ class TorrentCatcher:
                 if test[0][0] != 1:
                     self.write(title, link, feedname)
                     count['write'] += 1
-                    self.logger.info(title+' was added to queue')
+                    self.logger.info(title + ' was added to queue')
                 else:
                     self.cur.execute("SELECT * FROM torrents WHERE name=?",
                                      (title,))
@@ -215,10 +216,10 @@ class TorrentCatcher:
         else:
             if category == 'name':
                 self.cur.execute("SELECT * FROM torrents WHERE name LIKE ?;",
-                                 ('%'+query+'%',))
+                                 ('%' + query + '%',))
             elif category == 'source':
                 self.cur.execute("SELECT * FROM torrents WHERE source LIKE ?;",
-                                 ('%'+query+'%',))
+                                 ('%' + query + '%',))
             results = self.cur.fetchall()
             if not results:
                 print "No results found in '{0}' for '{1}'".format(category,
@@ -261,11 +262,11 @@ class TorrentCatcher:
             results = self.cur.fetchall()
             for each in results:
                 resultlist.append([
-                        each[0],
-                        each[1],
-                        each[3],
-                        status
-                    ])
+                    each[0],
+                    each[1],
+                    each[3],
+                    status
+                ])
             print tabulate(resultlist,
                            ['ID', 'Name', 'Source', 'Status'],
                            tablefmt='pipe')
@@ -294,20 +295,20 @@ class TorrentCatcher:
                     except:
                         print "'%s' is not a valid ID." % each
             for each in ids:
-                    self.cur.execute("SELECT * FROM torrents WHERE id=?",
-                                     (each,))
-                    selection = self.cur.fetchall()
-                    if not selection:
-                        self.logger.error(("ID '%s' does not exist") % (each))
-                    else:
-                        seltor = selection[0]
-                        if seltor[4] == 0:
-                            self.move(seltor[1])
-                        elif seltor[4] == 1:
-                            self.logger.info((
-                                    '%s is already in the archive.' %
-                                    (seltor[1])
-                            ))
+                self.cur.execute("SELECT * FROM torrents WHERE id=?",
+                                 (each,))
+                selection = self.cur.fetchall()
+                if not selection:
+                    self.logger.error("ID '%s' does not exist" % each)
+                else:
+                    seltor = selection[0]
+                    if seltor[4] == 0:
+                        self.move(seltor[1])
+                    elif seltor[4] == 1:
+                        self.logger.info((
+                            '%s is already in the archive.' %
+                            (seltor[1])
+                        ))
             self.logger.info(
                 'Archive process completed successfully'
             )
@@ -341,28 +342,28 @@ class TorrentCatcher:
                     except:
                         print "'%s' is not a valid ID." % each
             for each in ids:
-                    self.cur.execute("SELECT * FROM torrents WHERE id=?",
-                                     (each,))
-                    selection = self.cur.fetchall()
-                    if not selection:
-                        self.logger.error("ID '%s' does not exist" % each)
-                    else:
-                        seltor = selection[0]
-                        if seltor[4] == 1:
-                            self.cur.execute(
-                                ("UPDATE torrents SET downStatus=0 "
-                                 "WHERE name=?"),
-                                (seltor[1],)
-                            )
-                            self.con.commit()
-                            self.logger.info(
-                                seltor[1]+' was moved to the queue.'
-                            )
-                        elif seltor[4] == 0:
-                            self.logger.info(
-                                '%s is already in the queue.' %
-                                (seltor[1])
-                            )
+                self.cur.execute("SELECT * FROM torrents WHERE id=?",
+                                 (each,))
+                selection = self.cur.fetchall()
+                if not selection:
+                    self.logger.error("ID '%s' does not exist" % each)
+                else:
+                    seltor = selection[0]
+                    if seltor[4] == 1:
+                        self.cur.execute(
+                            ("UPDATE torrents SET downStatus=0 "
+                             "WHERE name=?"),
+                            (seltor[1],)
+                        )
+                        self.con.commit()
+                        self.logger.info(
+                            seltor[1] + ' was moved to the queue.'
+                        )
+                    elif seltor[4] == 0:
+                        self.logger.info(
+                            '%s is already in the queue.' %
+                            (seltor[1])
+                        )
             self.logger.info('Queue process completed successfully')
 
     # Function to add files to Transmission over transmission-remote
@@ -409,7 +410,7 @@ class TorrentCatcher:
                     errors += test
                 if errors > 0:
                     self.logger.info(
-                            'There were errors adding torrents to Transmission'
+                        'There were errors adding torrents to Transmission'
                     )
                 else:
                     self.logger.info(
@@ -456,7 +457,7 @@ class TorrentCatcher:
                 errors += test
             if errors > 0:
                 self.logger.error(
-                        'There were errors adding torrents to Transmission'
+                    'There were errors adding torrents to Transmission'
                 )
             else:
                 self.logger.info(
