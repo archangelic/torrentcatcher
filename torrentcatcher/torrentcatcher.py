@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 ###########################################################################
-# torrentcatcher v3.2.1
+# torrentcatcher v3.3.0
 #     Copyright (C) 2016  Michael Hancock
 #
 #     This program is free software: you can redistribute it and/or modify
@@ -23,8 +23,8 @@ import logging.handlers
 import sqlite3 as lite
 import sys
 import transmissionrpc
-import validate
 
+from validate import Validator
 from configobj import ConfigObj
 from feedparser import parse
 from tabulate import tabulate
@@ -32,7 +32,7 @@ from tabulate import tabulate
 
 class TorrentCatcher:
     def __init__(self, trconf, trlog, trdb, trquiet=False):
-        self.currentVersion = "3.2.1"
+        self.currentVersion = "3.3.0"
         self.configfile = trconf
         self.log = trlog
         self.quiet = trquiet
@@ -87,7 +87,7 @@ class TorrentCatcher:
             download_directory = string(default='')"""
         spec = cfg.split("\n")
         config = ConfigObj(self.configfile, configspec=spec)
-        validator = validate.Validator()
+        validator = Validator()
         config.validate(validator, copy=True)
         config.filename = self.configfile
         config.write()
@@ -169,8 +169,8 @@ class TorrentCatcher:
                     magnet = each
                 elif e[each].endswith('.torrent'):
                     torrent = each
-            except:
-                x = 1
+            except AttributeError:
+                continue
         if magnet:
             tag = magnet
         elif torrent:
@@ -200,8 +200,8 @@ class TorrentCatcher:
                                  (query,))
                 results = self.cur.fetchall()
                 if not results:
-                    print "No results found in '{0}' for '{1}".format(category,
-                                                                      query)
+                    print("No results found in '{0}' for '{1}".format(category,
+                                                                      query))
                 else:
                     for each in results:
                         if each[4] == 0:
@@ -209,10 +209,10 @@ class TorrentCatcher:
                         elif each[4] == 1:
                             status = 'Archive'
                         resultlist.append([each[0], each[1], each[3], status])
-                    print tabulate(resultlist,
-                                   ['ID', 'Name', 'Source', 'Status'])
-            except:
-                print "Please enter a valid ID number for ID searches."
+                    print(tabulate(resultlist,
+                                   ['ID', 'Name', 'Source', 'Status']))
+            except ValueError:
+                print("Please enter a valid ID number for ID searches.")
         else:
             if category == 'name':
                 self.cur.execute("SELECT * FROM torrents WHERE name LIKE ?;",
@@ -222,8 +222,8 @@ class TorrentCatcher:
                                  ('%' + query + '%',))
             results = self.cur.fetchall()
             if not results:
-                print "No results found in '{0}' for '{1}'".format(category,
-                                                                   query)
+                print("No results found in '{0}' for '{1}'".format(category,
+                                                                   query))
             else:
                 for each in results:
                     if each[4] == 0:
@@ -231,7 +231,7 @@ class TorrentCatcher:
                     elif each[4] == 1:
                         status = 'Archive'
                     resultlist.append([each[0], each[1], each[3], status])
-                print tabulate(resultlist, ['ID', 'Name', 'Source', 'Status'])
+                print(tabulate(resultlist, ['ID', 'Name', 'Source', 'Status']))
 
     # Function to list out given requests
     def lister(self, cat):
@@ -242,14 +242,14 @@ class TorrentCatcher:
             self.cur.execute('SELECT * FROM feeds;')
             feedlist = self.cur.fetchall()
             if not feedlist:
-                print 'No feeds were found!'
-                print "Use the '-f' or '--add-feed' option to add feeds."
+                print('No feeds were found!')
+                print("Use the '-f' or '--add-feed' option to add feeds.")
             else:
                 for each in feedlist:
                     resultlist.append([each[0], each[1], each[2]])
-                print tabulate(resultlist,
+                print(tabulate(resultlist,
                                ['ID', 'Name', 'URL'],
-                               tablefmt='pipe')
+                               tablefmt='pipe'))
         if cat == 'archive':
             down = 1
             status = 'Archive'
@@ -267,9 +267,9 @@ class TorrentCatcher:
                     each[3],
                     status
                 ])
-            print tabulate(resultlist,
+            print(tabulate(resultlist,
                            ['ID', 'Name', 'Source', 'Status'],
-                           tablefmt='pipe')
+                           tablefmt='pipe'))
 
     # Function to run the Archive only feature
     def archive(self, selID):
@@ -292,8 +292,8 @@ class TorrentCatcher:
                     try:
                         int(each)
                         ids.append(each)
-                    except:
-                        print "'%s' is not a valid ID." % each
+                    except ValueError:
+                        print("'%s' is not a valid ID." % each)
             for each in ids:
                 self.cur.execute("SELECT * FROM torrents WHERE id=?",
                                  (each,))
@@ -339,8 +339,8 @@ class TorrentCatcher:
                     try:
                         int(each)
                         ids.append(each)
-                    except:
-                        print "'%s' is not a valid ID." % each
+                    except ValueError:
+                        print("'%s' is not a valid ID." % each)
             for each in ids:
                 self.cur.execute("SELECT * FROM torrents WHERE id=?",
                                  (each,))
@@ -424,8 +424,8 @@ class TorrentCatcher:
                     try:
                         int(each)
                         ids.append(each)
-                    except:
-                        print "'%s' is not a valid ID." % each
+                    except ValueError:
+                        print("'%s' is not a valid ID." % each)
             for each in ids:
                 self.cur.execute("SELECT * FROM torrents WHERE id=?", (each,))
                 selection = self.cur.fetchall()
@@ -466,30 +466,30 @@ class TorrentCatcher:
 
     def setup(self):
         config = self.configreader()
-        print "Starting setup..."
-        hostname = raw_input("Transmission-remote host [localhost]: ")
+        print("Starting setup...")
+        hostname = input("Transmission-remote host [localhost]: ")
         if not hostname.strip():
             hostname = "localhost"
-        port = raw_input("Transmission-remote port [9091]: ")
+        port = input("Transmission-remote port [9091]: ")
         if not port.strip():
             port = "9091"
-        auth_resp = raw_input("Requires authentication [y/N]: ")
+        auth_resp = input("Requires authentication [y/N]: ")
         if not auth_resp.strip():
             auth = False
         if auth_resp.lower().strip() == "y":
             auth = True
-            user = raw_input("Username: ")
+            user = input("Username: ")
             password = getpass.getpass("Password: ")
         elif auth_resp.lower().strip() == "n":
             auth = False
         else:
             auth = False
-        downloads = raw_input("Download directory: ")
-        new_feed = raw_input("Add a feed now? [y/N]: ")
+        downloads = input("Download directory: ")
+        new_feed = input("Add a feed now? [y/N]: ")
         if new_feed.lower().strip() == "y":
             new_feed = True
-            feed_name = raw_input("Enter name for new feed: ")
-            feed_url = raw_input("URL for first feed: ")
+            feed_name = input("Enter name for new feed: ")
+            feed_url = input("URL for first feed: ")
         if hostname:
             config['hostname'] = hostname
         if port:
@@ -499,8 +499,8 @@ class TorrentCatcher:
             config['username'] = user
             config['password'] = password
         config['download_directory'] = downloads
-        print "Saving configuration..."
+        print("Saving configuration...")
         if new_feed:
             self.addfeed(feed_name, feed_url)
         config.write()
-        print "Setup complete!"
+        print("Setup complete!")

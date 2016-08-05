@@ -4,7 +4,7 @@ import os
 
 from torrentcatcher import torrentcatcher, update
 
-currentVersion = "3.2.1"
+currentVersion = "3.3.0"
 
 
 def main():
@@ -164,11 +164,11 @@ def main():
         tc.queue(args.queue)
     if args.search:
         argument = True
-        query = raw_input('Enter query: ')
+        query = input('Enter query: ')
         tc.torsearch(args.search[0], query)
     if args.setup:
         argument = True
-        print 'Setting up File locations...'
+        print('Setting up File locations...')
         tc.setup()
     if not argument:
         tc.torrentcatcher()

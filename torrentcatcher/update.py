@@ -1,14 +1,14 @@
-import sqlite3 as lite
+import sqlite3
 
 
 def start(database):
-    con = lite.connect(database)
+    con = sqlite3.connect(database)
     cur = con.cursor()
-    currentVersion = "3.2.1"
+    currentVersion = "3.3.0"
     try:
         cur.execute('SELECT b FROM info WHERE a="version"')
         version = cur.fetchall()[0][0]
-    except:
+    except sqlite3.OperationalError:
         cur.execute(
             'CREATE TABLE IF NOT EXISTS info(a,b)'
         )
@@ -16,15 +16,15 @@ def start(database):
         con.commit()
         version = "1.0.0"
     if version == "1.0.0":
-        print "Database needs to be updated"
+        print("Database needs to be updated")
         cur.execute('SELECT * FROM feeds')
         feeds = cur.fetchall()
         cur.execute("CREATE TABLE IF NOT EXISTS hold(name, url, tag)")
         con.commit()
         for each in feeds:
             x, name, url = each
-            print name + " at " + url
-            tag = raw_input("RSS tag: ")
+            print(name + " at " + url)
+            tag = input("RSS tag: ")
             tag = tag.lower()
             if tag == "":
                 tag = "link"
@@ -49,7 +49,7 @@ def start(database):
         cur.execute('UPDATE info SET b=? WHERE a="version"', (currentVersion,))
         con.commit()
     elif version == currentVersion:
-        print "Database already up to date"
+        print("Database already up to date")
     else:
         cur.execute('UPDATE info SET b=? WHERE a="version"', (currentVersion,))
         con.commit()
