@@ -1,5 +1,7 @@
 torrentcatcher
 ===========
+#THIS PROJECT IS DEPRECATED
+#Check out [Cistern](https://archangelic.github.io/cistern) for continued support
 ###Description
 Takes torrent or magnet links from rss feeds you provide, parses them and sends them to transmission.
 ###Installation and Usage
